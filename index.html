@@ -74,6 +74,32 @@ details>div{padding:4px 12px 12px}
 .saved{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
 .saved .grow{flex:1}
 
+.frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-items:end}
+.frm .w2{grid-column:span 2}
+@media(max-width:700px){.frm .w2{grid-column:span 1}}
+.sec{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}
+.sec h3{margin:0 0 2px;font-size:13px;color:var(--navy)}
+.calc{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:10px;background:#F3EDE3;color:#A9693C;font-size:12px}
+.chk{display:flex;flex-direction:column;gap:6px;justify-content:flex-end}
+.chk label{text-transform:none;font-weight:normal;font-size:13px;color:var(--ink);letter-spacing:0;margin:0;display:flex;gap:6px;align-items:center}
+.chk input{width:auto}
+table.qt{min-width:1080px;table-layout:auto}
+table.qt td{font-size:12px;word-break:break-word}
+table.qt td.l{min-width:260px;max-width:420px}
+table.qt td.nw{white-space:nowrap}
+.clamp{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;color:var(--muted);font-size:12px;margin-top:3px}
+.acts{display:flex;flex-direction:column;gap:4px}
+.mlist{margin:14px 0 0;padding-left:26px;columns:2;column-gap:28px;font-size:12px;color:var(--ink)}
+.mlist li{break-inside:avoid;margin-bottom:4px;word-break:break-word}
+@media(max-width:700px){.mlist{columns:1}}
+input,select,textarea{max-width:100%}
+.btn{white-space:nowrap}
+.grip{cursor:grab;color:#A99A89;letter-spacing:-2px;user-select:none;margin-right:2px}
+tr.dragging{opacity:.4}
+tr.over-top td{box-shadow:inset 0 3px 0 #C0895E}
+tr.over-bot td{box-shadow:inset 0 -3px 0 #C0895E}
+table.qt tbody tr{cursor:default}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -107,30 +133,44 @@ details>div{padding:4px 12px 12px}
 <div id="queue" class="on">
   <div class="card">
     <h2 id="formTitle">Log a data pull opportunity</h2>
-    <div class="grid">
-      <div><label>Data pull / client</label><input id="f_name" placeholder="e.g. Fetch Pet Insurance follow-up"></div>
+    <div class="frm">
+      <div class="w2"><label>Data pull / client</label><input id="f_name" placeholder="e.g. Fetch Pet Insurance follow-up"></div>
+      <div><label>Requested by</label><input id="f_req" placeholder="Name or team"></div>
       <div><label>Due date</label><input id="f_due" type="date"><div class="hint">Converts to a 1&ndash;5 score</div></div>
-      <div><label>Opportunity (1&ndash;5)</label><select id="f_opp"></select></div>
-      <div><label>Expected client outcome</label><select id="f_out"><option value="0">Exploratory only</option><option value="1" selected>Small test campaign</option><option value="2">Planned campaign</option><option value="3">Large or live flight</option></select></div>
-      <div><label>Segments</label><input id="f_seg" type="number" min="1" value="1"></div>
       <div><label>Status</label><select id="f_status"><option>Open</option><option>In progress</option><option>Done</option></select></div>
     </div>
-    <div class="row2">
-      <div><label>Requested by</label><input id="f_req" placeholder="Name or team"></div>
-      <div><label>Notes</label><textarea id="f_notes" rows="1" placeholder="Context, links, constraints"></textarea></div>
+
+    <div class="sec"><h3>Opportunity <span class="calc" id="oppOut"></span></h3>
+      <div class="hint">Calculated 1&ndash;10 from how big the opportunity is.</div>
+      <div class="frm">
+        <div><label>Expected client outcome</label><select id="f_out"><option value="0">Exploratory only</option><option value="1" selected>Small test campaign</option><option value="2">Planned campaign</option><option value="3">Large or live flight</option><option value="4">Signs up for Latis</option></select></div>
+        <div><label>Client size / ad spend</label><select id="f_size"><option value="0">Small</option><option value="1" selected>Mid-size</option><option value="2">Large</option></select></div>
+        <div><label>Meetings held so far</label><input id="f_mtg" type="number" min="1" value="1"></div>
+        <div class="chk"><label><input type="checkbox" id="f_first">First time meeting them</label><label><input type="checkbox" id="f_prev">We've done pulls for them before</label><label><input type="checkbox" id="f_reuse">Reusable for other clients or verticals</label></div>
+      </div>
     </div>
-    <div class="row2" style="grid-template-columns:repeat(4,1fr);align-items:end">
-      <div><label>Meetings held</label><input id="f_mtg" type="number" min="1" value="1"></div>
-      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0 0 8px"><input type="checkbox" id="f_first" style="width:auto;margin-right:6px">First time meeting them</label>
-      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0 0 8px"><input type="checkbox" id="f_prev" style="width:auto;margin-right:6px">We've done previous pulls for them</label>
-      <div><label>Likely to sign up for Latis?</label><select id="f_sign"><option value="0">Unlikely</option><option value="1" selected>Possible</option><option value="2">Likely</option><option value="3">Committed / signed</option></select></div>
+
+    <div class="sec"><h3>Effort <span class="calc" id="effOut"></span></h3>
+      <div class="hint">Calculated 1&ndash;5 (5 = most effort).</div>
+      <div class="frm">
+        <div><label>Segments</label><input id="f_seg" type="number" min="1" value="1"></div>
+        <div class="chk"><label><input type="checkbox" id="f_ov">Overlays (Epsilon, Experian, etc.)</label><label><input type="checkbox" id="f_cq">Conquest rule (not on brand's site)</label><label><input type="checkbox" id="f_wb">Win-back rule (used to visit, then left)</label></div>
+      </div>
     </div>
-    <div class="row2" style="grid-template-columns:repeat(3,auto) 1fr;align-items:center">
-      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0"><input type="checkbox" id="f_ov" style="width:auto;margin-right:6px">Overlays (Epsilon, Experian, etc.)</label>
-      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0"><input type="checkbox" id="f_cq" style="width:auto;margin-right:6px">Conquest rule (not on brand's site)</label>
-      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0"><input type="checkbox" id="f_wb" style="width:auto;margin-right:6px">Win-back rule (used to visit, then left)</label>
-      <span class="note">Effort is calculated from these.</span>
+
+    <div class="sec"><h3>Embeddings description</h3>
+      <textarea id="f_desc" rows="4" placeholder="Describe the audience in embeddings terms: who they are, the signals, the geo."></textarea>
     </div>
+
+    <div class="sec"><h3>Campaign success likelihood <span class="calc" id="succOut"></span></h3>
+      <div class="hint">1&ndash;10. Scored by AI from the embeddings description plus internet research on the company and its marketing, or set it yourself.</div>
+      <div class="frm">
+        <div><label>Score (1&ndash;10)</label><input id="f_succ" type="number" min="1" max="10" value="5"></div>
+        <div class="w2"><label>Why</label><textarea id="f_why" rows="2" placeholder="Rationale appears here after AI scoring"></textarea></div>
+      </div>
+      <div class="bar"><button class="btn sec" id="aiScore">Score with AI</button><span class="note" id="aiMsg"></span></div>
+    </div>
+
     <div class="bar">
       <button class="btn" id="saveBtn">Add to queue</button>
       <button class="btn sec" id="cancelBtn" style="display:none">Cancel edit</button>
@@ -142,10 +182,12 @@ details>div{padding:4px 12px 12px}
       <h2 style="margin:0">Priority queue</h2>
       <label style="margin:0;text-transform:none;font-weight:normal;font-size:13px"><input type="checkbox" id="showDone" style="width:auto;margin-right:4px">Show completed</label>
       <span class="note" id="count"></span>
+      <label style="margin:0;text-transform:none;font-weight:normal;font-size:13px">Order <select id="ordSel" style="width:auto;padding:4px 6px;display:inline-block"><option value="calc">Calculated priority</option><option value="manual">Manual (drag rows)</option></select></label>
       <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec sm" id="exCsv">Export CSV</button></span>
     </div>
-    <div style="overflow-x:auto"><table>
-      <thead><tr><th>Rank</th><th class="l">Data pull / client</th><th>Due</th><th>Due score</th><th>Opp</th><th>Impact</th><th>Effort</th><th>Value</th><th>Priority</th><th>Quadrant</th><th>Status</th><th></th></tr></thead>
+    <div class="note" style="margin-bottom:6px">Drag a row by the &#8942;&#8942; handle to set your own order. Dropping a row switches to Manual and shares the order with everyone.</div>
+    <div style="overflow-x:auto"><table class="qt">
+      <thead><tr><th>Rank</th><th class="l">Data pull / client</th><th>Due</th><th>Due<br>score</th><th>Opp<br>/10</th><th>Success<br>/10</th><th>Effort<br>/5</th><th>Value</th><th>Priority</th><th>Quadrant</th><th>Status</th><th></th></tr></thead>
       <tbody id="rows"></tbody>
     </table></div>
   </div>
@@ -155,13 +197,14 @@ details>div{padding:4px 12px 12px}
   <div class="card">
     <h2>Four-box matrix</h2>
     <div class="note" style="margin-bottom:8px">Each dot is an open pull, numbered by priority rank. Hover for details, click to jump to its row.</div>
-    <div id="chartwrap"><svg id="chart" viewBox="0 0 900 560" width="100%"></svg><div id="tip"></div></div>
+    <div id="chartwrap"><svg id="chart" viewBox="0 0 900 520" width="100%"></svg><div id="tip"></div></div>
     <div class="legend">
       <span><i style="background:#5f8a4f"></i>Quick Win: high value, low effort. Do first.</span>
       <span><i style="background:#4f7396"></i>Big Bet: high value, high effort. Plan and resource.</span>
       <span><i style="background:#C0895E"></i>Fill-In: low value, low effort. Spare capacity.</span>
       <span><i style="background:#8d8071"></i>Time Sink: low value, high effort. Decline or rescope.</span>
     </div>
+    <ol class="mlist" id="mlist"></ol>
   </div>
 </div>
 
@@ -212,12 +255,12 @@ details>div{padding:4px 12px 12px}
       <thead><tr><th>Criterion</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
       <tbody>
         <tr><td>Due date<br><span style="font-weight:normal">entered as a date, converted to a score</span></td><td>No deadline, or 31+ days out</td><td>15&ndash;30 days out</td><td>8&ndash;14 days out</td><td>4&ndash;7 days out</td><td>3 days or less, or overdue</td></tr>
-        <tr><td>Opportunity</td><td>One-off or small request; no pipeline attached</td><td>Single early-stage prospect; interest not yet qualified</td><td>Qualified prospect with beta or campaign potential</td><td>Strategic account, or reusable across several clients or verticals</td><td>High-value or live beta client; likely to close or expand</td></tr>
-        <tr><td>Impact<br><span style="font-weight:normal">calculated</span></td><td colspan="5">Adds points for: expected client outcome (exploratory 0, small test 1, planned campaign 2, large or live flight 3); likelihood to sign up for Latis (unlikely 0, possible 1, likely 2, committed 3); relationship (first meeting 0, 2&ndash;3 meetings +1, 4 or more +2); and previous pulls done (+1). Score = 1 + total &divide; 2, rounded down, max 5.</td></tr>
+        <tr><td>Opportunity<br><span style="font-weight:normal">calculated, 1&ndash;10</span></td><td colspan="5">Points for: expected outcome (exploratory 0, small test 1, planned campaign 2, large or live flight 3, signs up for Latis 4); client size (small 0, mid 1, large 2); relationship (first meeting 0, 2&ndash;3 meetings 1, 4 or more 2); previous pulls done (+1); reusable across clients or verticals (+1). Score = total, minimum 1, maximum 10.</td></tr>
+        <tr><td>Campaign success<br><span style="font-weight:normal">1&ndash;10</span></td><td colspan="5">How likely the campaign is to succeed, judged from the embeddings description and from what is known about the company and its marketing (internet research). AI-scored on request, and you can override it.</td></tr>
         <tr><td>Effort<br><span style="font-weight:normal">calculated, 5 = most effort</span></td><td colspan="5">Starts at 1. <b>+1</b> for 2&ndash;3 segments, <b>+2</b> for 4 or more. <b>+1</b> if an overlay is needed (Epsilon, Experian, etc.). <b>+1</b> for a conquest rule (exclude the brand's site). <b>+1</b> for a win-back rule (used to visit, then left). Capped at 5.</td></tr>
       </tbody>
     </table></div>
-    <p class="note"><b>Value</b> = average of due-date score, Opportunity and Impact (3 or higher counts as high). <b>Priority</b> = (due-date + Opportunity + Impact) &divide; Effort. Effort of 3 or lower counts as low. Ties go to the higher due-date score.</p>
+    <p class="note"><b>Value</b> = average of the due-date score, Opportunity &divide; 2 and Campaign success &divide; 2 (3 or higher counts as high). <b>Priority</b> = (due-date + Opportunity &divide; 2 + Success &divide; 2) &divide; Effort. Effort of 3 or lower counts as low. Ties go to the higher due-date score.</p>
   </div>
 </div>
 </div>
@@ -359,11 +402,11 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const CFG=window.FIREBASE_CONFIG, DOMAIN=window.ALLOWED_DOMAIN||'';
 const LIVE=!!(CFG&&CFG.apiKey&&CFG.apiKey.indexOf('YOUR_')<0&&window.firebase);
-const COLS=['pulls','writeups','decks'];
+const COLS=['pulls','writeups','decks','settings'];
 
 /* ---------- storage: Firestore when configured, localStorage otherwise ---------- */
 let fb=null,user=null;
-const store={pulls:[],writeups:[],decks:[]};
+const store={pulls:[],writeups:[],decks:[],settings:[]};
 const subs=[];
 function localKey(c){return 'latis-studio-'+c}
 function localLoad(c){try{return JSON.parse(localStorage.getItem(localKey(c))||'[]')}catch(e){return []}}
@@ -398,8 +441,10 @@ function boot(){
   fb.auth().signInAnonymously().catch(e=>{setSync('Sync error','warn');console.error(e)});
 }
 async function ai(task,payload){
-  if(!LIVE)throw new Error('AI drafting needs the Firebase back end. Finish SETUP.md, then reload.');
-  const r=await fb.functions().httpsCallable('generate',{timeout:170000})({task,payload});
+  if(!LIVE)throw new Error('AI drafting is not set up yet (the Cloud Function has not been deployed).');
+  let code='';try{code=localStorage.getItem('latis-ai-code')||''}catch(e){}
+  if(!code){code=(prompt('Enter the team AI access code:')||'').trim();if(!code)throw new Error('An access code is needed for AI features.');try{localStorage.setItem('latis-ai-code',code)}catch(e){}}
+  let r;try{r=await fb.functions().httpsCallable('generate',{timeout:170000})({task,payload,code})}catch(e){if(/access code/i.test(e.message||'')){try{localStorage.removeItem('latis-ai-code')}catch(_){}}throw e}
   return r.data;
 }
 function who(){return 'team'}
@@ -408,67 +453,118 @@ function who(){return 'team'}
 function showTab(t){document.querySelectorAll('.tabs>div').forEach(d=>d.classList.toggle('on',d.id===t));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t))}
 $('nav').addEventListener('click',e=>{if(e.target.dataset.t){showTab(e.target.dataset.t);if(e.target.dataset.t==='matrix')drawChart()}});
 
-/* ---------- Prioritize (fixed scoring, no settings) ---------- */
+/* ---------- Prioritize ---------- */
 const VC=3,EC=3;
 function todayMid(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
 function daysTo(due){if(!due)return null;const p=due.split('-');return Math.round((new Date(+p[0],+p[1]-1,+p[2])-todayMid())/86400000)}
 function dueScore(due){const d=daysTo(due);if(d===null)return 1;return d<=3?5:d<=7?4:d<=14?3:d<=30?2:1}
-function calc(it){const ds=dueScore(it.due),value=(ds+it.opp+it.imp)/3,pri=(ds+it.opp+it.imp)/it.eff;const hv=value>=VC,le=it.eff<=EC;return{ds,value,pri,q:hv?(le?'QW':'BB'):(le?'FI':'TS')}}
+function oppOf(first,mtg,prev,out,size,reuse){const m=first?0:(mtg>=4?2:mtg>=2?1:0);return Math.max(1,Math.min(10,m+(prev?1:0)+(+out||0)+(+size||0)+(reuse?1:0)))}
+function effortOf(seg,ov,cq,wb){seg=Math.max(1,+seg||1);return Math.min(5,1+(seg>=4?2:seg>=2?1:0)+(ov?1:0)+(cq?1:0)+(wb?1:0))}
+function calc(it){
+  const ds=dueScore(it.due);
+  const opp=it.opp10!=null?it.opp10:(it.opp||3)*2;      // older entries were scored 1-5
+  const succ=it.succ!=null?it.succ:(it.imp||3)*2;
+  const sum=ds+opp/2+succ/2;
+  const value=sum/3,pri=sum/it.eff,hv=value>=VC,le=it.eff<=EC;
+  return{ds,opp,succ,value,pri,q:hv?(le?'QW':'BB'):(le?'FI':'TS')};
+}
 const QN={QW:'Quick Win',BB:'Big Bet',FI:'Fill-In',TS:'Time Sink'},QC={QW:'#5f8a4f',BB:'#4f7396',FI:'#C0895E',TS:'#8d8071'};
 let editId=null,hlId=null;
-function ranked(incl){const l=store.pulls.filter(i=>incl||i.status!=='Done').map(i=>Object.assign({},i,{c:calc(i)}));l.sort((a,b)=>b.c.pri-a.c.pri||b.c.ds-a.c.ds||(a.created||0)-(b.created||0));l.forEach((x,i)=>x.rank=i+1);return l}
+function orderMode(){const s=store.settings.find(x=>x.id==='order');return s&&s.mode==='manual'?'manual':'calc'}
+function ranked(incl){const l=store.pulls.filter(i=>incl||i.status!=='Done').map(i=>Object.assign({},i,{c:calc(i)}));
+  if(orderMode()==='manual')l.sort((a,b)=>(a.ord==null?1e9:a.ord)-(b.ord==null?1e9:b.ord)||b.c.pri-a.c.pri);
+  else l.sort((a,b)=>b.c.pri-a.c.pri||b.c.ds-a.c.ds||(a.created||0)-(b.created||0));
+  l.forEach((x,i)=>x.rank=i+1);return l}
 function fmtDue(due){if(!due)return '<span class="note">none</span>';const d=daysTo(due),p=due.split('-');const t=new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});return t+'<div class="note">'+(d<0?Math.abs(d)+'d overdue':d===0?'today':d+'d')+'</div>'}
 function renderQueue(){
   const list=ranked($('showDone').checked),body=$('rows');
-  body.innerHTML=!list.length?'<tr><td colspan="12" class="empty">No data pulls logged yet. Add one above.</td></tr>':list.map(x=>{const c=x.c;
-    return '<tr data-id="'+x.id+'" class="'+(x.status==='Done'?'done ':'')+(hlId===x.id?'hl':'')+'"><td><b>'+(x.status==='Done'?'&ndash;':x.rank)+'</b></td><td class="l"><b>'+esc(x.name)+'</b>'+(x.req?'<div class="note">'+esc(x.req)+'</div>':'')+(x.notes?'<div class="note">'+esc(x.notes)+'</div>':'')+'</td><td>'+fmtDue(x.due)+'</td><td><span class="score">'+c.ds+'</span></td><td><span class="score">'+x.opp+'</span></td><td><span class="score">'+x.imp+'</span></td><td><span class="score">'+x.eff+'</span></td><td>'+c.value.toFixed(1)+'</td><td><b>'+c.pri.toFixed(1)+'</b></td><td><span class="q '+c.q+'">'+QN[c.q]+'</span></td><td><select class="stsel" data-id="'+x.id+'" style="background:#fff;padding:4px">'+['Open','In progress','Done'].map(s=>'<option'+(s===x.status?' selected':'')+'>'+s+'</option>').join('')+'</select></td><td style="white-space:nowrap"><button class="btn sec sm ed" data-id="'+x.id+'">Edit</button> <button class="btn danger sm del" data-id="'+x.id+'">Delete</button></td></tr>'}).join('');
-  const open=store.pulls.filter(i=>i.status!=='Done').length;$('count').textContent=open+' open, '+(store.pulls.length-open)+' done';
+  body.innerHTML=!list.length?'<tr><td colspan="12" class="empty">No data pulls logged yet. Add one above.</td></tr>':list.map(x=>{const c=x.c,desc=x.desc||x.notes||'';
+    return '<tr draggable="true" data-id="'+x.id+'" class="'+(x.status==='Done'?'done ':'')+(hlId===x.id?'hl':'')+'"><td class="nw"><span class="grip" title="Drag to reorder">&#8942;&#8942;</span> <b>'+(x.status==='Done'?'&ndash;':x.rank)+'</b></td><td class="l"><b>'+esc(x.name)+'</b>'+(x.req?'<div class="note">'+esc(x.req)+'</div>':'')+(desc?'<div class="clamp" title="'+esc(desc)+'">'+esc(desc)+'</div>':'')+'</td><td class="nw">'+fmtDue(x.due)+'</td><td><span class="score">'+c.ds+'</span></td><td><span class="score">'+c.opp+'</span></td><td><span class="score">'+c.succ+'</span></td><td><span class="score">'+x.eff+'</span></td><td>'+c.value.toFixed(1)+'</td><td><b>'+c.pri.toFixed(1)+'</b></td><td class="nw"><span class="q '+c.q+'">'+QN[c.q]+'</span></td><td><select class="stsel" data-id="'+x.id+'" style="background:#fff;padding:4px;width:auto">'+['Open','In progress','Done'].map(s=>'<option'+(s===x.status?' selected':'')+'>'+s+'</option>').join('')+'</select></td><td><div class="acts"><button class="btn sec sm ed" data-id="'+x.id+'">Edit</button><button class="btn danger sm del" data-id="'+x.id+'">Delete</button></div></td></tr>'}).join('');
+  const open=store.pulls.filter(i=>i.status!=='Done').length;$('count').textContent=open+' open, '+(store.pulls.length-open)+' done';$('ordSel').value=orderMode();
   drawChart();
 }
 function drawChart(){
-  const svg=$('chart');if(!svg)return;const W=900,H=560,L=64,R=24,T=20,B=56,pw=W-L-R,ph=H-T-B;
+  const svg=$('chart');if(!svg)return;const W=900,H=520,L=64,R=24,T=20,B=56,pw=W-L-R,ph=H-T-B;
   const x=v=>L+(v-0.5)/5*pw,y=v=>T+ph-(v-0.5)/5*ph,xc=x(EC+0.5),yc=y(VC-0.0001);let o='';
   o+='<rect x="'+L+'" y="'+T+'" width="'+(xc-L)+'" height="'+(yc-T)+'" fill="#dfe9d6" opacity=".8"/><rect x="'+xc+'" y="'+T+'" width="'+(L+pw-xc)+'" height="'+(yc-T)+'" fill="#dde6ee" opacity=".85"/><rect x="'+L+'" y="'+yc+'" width="'+(xc-L)+'" height="'+(T+ph-yc)+'" fill="#f3dfc8" opacity=".85"/><rect x="'+xc+'" y="'+yc+'" width="'+(L+pw-xc)+'" height="'+(T+ph-yc)+'" fill="#e9e4dc" opacity=".9"/>';
   o+='<text x="'+(L+10)+'" y="'+(T+22)+'" font-size="14" font-weight="bold" fill="#5f8a4f">QUICK WINS</text><text x="'+(L+pw-10)+'" y="'+(T+22)+'" font-size="14" font-weight="bold" fill="#4f7396" text-anchor="end">BIG BETS</text><text x="'+(L+10)+'" y="'+(T+ph-10)+'" font-size="14" font-weight="bold" fill="#A9693C">FILL-INS</text><text x="'+(L+pw-10)+'" y="'+(T+ph-10)+'" font-size="14" font-weight="bold" fill="#8d8071" text-anchor="end">TIME SINKS</text>';
   for(let v=1;v<=5;v++){o+='<line x1="'+x(v)+'" x2="'+x(v)+'" y1="'+(T+ph)+'" y2="'+(T+ph+5)+'" stroke="#888"/><text x="'+x(v)+'" y="'+(T+ph+20)+'" font-size="12" fill="#555" text-anchor="middle">'+v+'</text><line y1="'+y(v)+'" y2="'+y(v)+'" x1="'+(L-5)+'" x2="'+L+'" stroke="#888"/><text x="'+(L-10)+'" y="'+(y(v)+4)+'" font-size="12" fill="#555" text-anchor="end">'+v+'</text>'}
   o+='<rect x="'+L+'" y="'+T+'" width="'+pw+'" height="'+ph+'" fill="none" stroke="#888"/><line x1="'+xc+'" x2="'+xc+'" y1="'+T+'" y2="'+(T+ph)+'" stroke="#666" stroke-dasharray="6 5"/><line x1="'+L+'" x2="'+(L+pw)+'" y1="'+yc+'" y2="'+yc+'" stroke="#666" stroke-dasharray="6 5"/>';
-  o+='<text x="'+(L+pw/2)+'" y="'+(H-12)+'" font-size="13" font-weight="bold" fill="#333" text-anchor="middle">EFFORT  (1 = low, 5 = high)</text><text transform="translate(16,'+(T+ph/2)+') rotate(-90)" font-size="13" font-weight="bold" fill="#333" text-anchor="middle">VALUE  (avg of due date, opportunity, impact)</text>';
+  o+='<text x="'+(L+pw/2)+'" y="'+(H-12)+'" font-size="13" font-weight="bold" fill="#333" text-anchor="middle">EFFORT  (1 = low, 5 = high)</text><text transform="translate(16,'+(T+ph/2)+') rotate(-90)" font-size="13" font-weight="bold" fill="#333" text-anchor="middle">VALUE</text>';
   const list=ranked(false),seen={};
-  list.forEach(it=>{const k=it.eff+'|'+it.c.value.toFixed(2),n=seen[k]=(seen[k]||0)+1,a=(n-1)*2.4,r=(n-1)*0.07;it.px=x(it.eff+Math.cos(a)*r);it.py=y(it.c.value+Math.sin(a)*r*0.8)});
-  list.forEach(it=>{const col=QC[it.c.q],lab=it.name.length>26?it.name.slice(0,25)+'…':it.name,right=it.px<L+pw-190;
-    o+='<g class="dot" data-id="'+it.id+'" style="cursor:pointer"><circle cx="'+it.px+'" cy="'+it.py+'" r="12" fill="'+col+'" stroke="#fff" stroke-width="2"/><text x="'+it.px+'" y="'+(it.py+4)+'" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">'+it.rank+'</text><text x="'+(right?it.px+17:it.px-17)+'" y="'+(it.py+4)+'" font-size="11" fill="#222" text-anchor="'+(right?'start':'end')+'" paint-order="stroke" stroke="#fff" stroke-width="3">'+esc(lab)+'</text></g>'});
+  list.forEach(it=>{const k=it.eff+'|'+it.c.value.toFixed(1),n=seen[k]=(seen[k]||0)+1,a=(n-1)*2.4,r=(n-1)*0.09;it.px=x(Math.max(0.6,Math.min(5.4,it.eff+Math.cos(a)*r)));it.py=y(Math.max(0.6,Math.min(5.4,it.c.value+Math.sin(a)*r*0.8)))});
+  list.forEach(it=>{const col=QC[it.c.q];
+    o+='<g class="dot" data-id="'+it.id+'" style="cursor:pointer"><circle cx="'+it.px+'" cy="'+it.py+'" r="13" fill="'+col+'" stroke="#fff" stroke-width="2"/><text x="'+it.px+'" y="'+(it.py+4)+'" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">'+it.rank+'</text></g>'});
   if(!list.length)o+='<text x="'+(L+pw/2)+'" y="'+(T+ph/2)+'" font-size="14" fill="#888" text-anchor="middle">Add data pulls to see them plotted</text>';
   svg.innerHTML=o;const tip=$('tip');
+  $('mlist').innerHTML=list.map(it=>'<li value="'+it.rank+'"><b>'+esc(it.name)+'</b> <span class="q '+it.c.q+'">'+QN[it.c.q]+'</span></li>').join('');
   svg.querySelectorAll('.dot').forEach(g=>{const it=list.find(z=>z.id===g.dataset.id);
-    g.addEventListener('mousemove',e=>{const r=$('chartwrap').getBoundingClientRect();tip.style.display='block';tip.style.left=(e.clientX-r.left+14)+'px';tip.style.top=(e.clientY-r.top+14)+'px';tip.innerHTML='<b>#'+it.rank+' '+esc(it.name)+'</b><br>'+QN[it.c.q]+' &middot; priority '+it.c.pri.toFixed(1)+'<br>Due '+it.c.ds+' &middot; Opp '+it.opp+' &middot; Impact '+it.imp+' &middot; Effort '+it.eff});
+    g.addEventListener('mousemove',e=>{const r=$('chartwrap').getBoundingClientRect();tip.style.display='block';tip.style.left=Math.min(e.clientX-r.left+14,r.width-270)+'px';tip.style.top=(e.clientY-r.top+14)+'px';tip.innerHTML='<b>#'+it.rank+' '+esc(it.name)+'</b><br>'+QN[it.c.q]+' &middot; priority '+it.c.pri.toFixed(1)+'<br>Due '+it.c.ds+'/5 &middot; Opp '+it.c.opp+'/10 &middot; Success '+it.c.succ+'/10 &middot; Effort '+it.eff+'/5'});
     g.addEventListener('mouseleave',()=>tip.style.display='none');
     g.addEventListener('click',()=>{hlId=it.id;showTab('queue');renderQueue();const row=document.querySelector('tr[data-id="'+it.id+'"]');if(row)row.scrollIntoView({block:'center'})})});
 }
-function opts(sel,def){for(let i=1;i<=5;i++){const o=document.createElement('option');o.value=i;o.textContent=i;if(i===def)o.selected=true;sel.appendChild(o)}}
-opts($('f_opp'),3);
-function effortOf(seg,ov,cq,wb){seg=Math.max(1,+seg||1);return Math.min(5,1+(seg>=4?2:seg>=2?1:0)+(ov?1:0)+(cq?1:0)+(wb?1:0))}
-function impactOf(first,mtg,prev,out,sign){const m=first?0:(mtg>=4?2:mtg>=2?1:0);return Math.min(5,1+Math.floor(((+out||0)+(+sign||0)+m+(prev?1:0))/2))}
-function formImp(){return impactOf($('f_first').checked,+$('f_mtg').value||1,$('f_prev').checked,$('f_out').value,$('f_sign').value)}
+function formOpp(){return oppOf($('f_first').checked,+$('f_mtg').value||1,$('f_prev').checked,$('f_out').value,$('f_size').value,$('f_reuse').checked)}
 function formEff(){return effortOf($('f_seg').value,$('f_ov').checked,$('f_cq').checked,$('f_wb').checked)}
-function preview(){const c=calc({due:$('f_due').value,opp:+$('f_opp').value,imp:formImp(),eff:formEff()});$('preview').innerHTML='Due score <b>'+c.ds+'</b> &middot; Value <b>'+c.value.toFixed(1)+'</b> &middot; Priority <b>'+c.pri.toFixed(1)+'</b> &middot; <span class="q '+c.q+'">'+QN[c.q]+'</span>'}
-['f_due','f_opp','f_mtg','f_first','f_prev','f_out','f_sign','f_seg','f_ov','f_cq','f_wb'].forEach(id=>$(id).addEventListener('input',preview));
-function resetForm(){editId=null;$('f_name').value='';$('f_due').value='';$('f_req').value='';$('f_notes').value='';$('f_opp').value=3;$('f_mtg').value=1;$('f_first').checked=false;$('f_prev').checked=false;$('f_out').value=1;$('f_sign').value=1;$('f_seg').value=1;$('f_ov').checked=false;$('f_cq').checked=false;$('f_wb').checked=false;$('f_status').value='Open';$('saveBtn').textContent='Add to queue';$('cancelBtn').style.display='none';$('formTitle').textContent='Log a data pull opportunity';preview()}
+function formSucc(){return Math.max(1,Math.min(10,Math.round(+$('f_succ').value||5)))}
+function preview(){
+  const o=formOpp(),e=formEff(),s=formSucc();
+  $('oppOut').textContent=o+' / 10';$('effOut').textContent=e+' / 5';$('succOut').textContent=s+' / 10';
+  const c=calc({due:$('f_due').value,opp10:o,succ:s,eff:e});
+  $('preview').innerHTML='Due score <b>'+c.ds+'</b> &middot; Value <b>'+c.value.toFixed(1)+'</b> &middot; Priority <b>'+c.pri.toFixed(1)+'</b> &middot; <span class="q '+c.q+'">'+QN[c.q]+'</span>';
+}
+['f_due','f_mtg','f_first','f_prev','f_out','f_size','f_reuse','f_seg','f_ov','f_cq','f_wb','f_succ'].forEach(id=>$(id).addEventListener('input',preview));
+function setForm(it){
+  $('f_name').value=it.name||'';$('f_due').value=it.due||'';$('f_req').value=it.req||'';$('f_desc').value=it.desc!=null?it.desc:(it.notes||'');
+  $('f_mtg').value=it.mtg||1;$('f_first').checked=!!it.first;$('f_prev').checked=!!it.prev;$('f_out').value=it.out!=null?it.out:1;$('f_size').value=it.size!=null?it.size:1;$('f_reuse').checked=!!it.reuse;
+  $('f_seg').value=it.seg||1;$('f_ov').checked=!!it.ov;$('f_cq').checked=!!it.cq;$('f_wb').checked=!!it.wb;
+  $('f_succ').value=it.succ!=null?it.succ:(it.imp?it.imp*2:5);$('f_why').value=it.why||'';$('f_status').value=it.status||'Open';$('aiMsg').textContent='';preview();
+}
+function resetForm(){editId=null;setForm({});$('saveBtn').textContent='Add to queue';$('cancelBtn').style.display='none';$('formTitle').textContent='Log a data pull opportunity'}
 $('saveBtn').onclick=async()=>{
   const name=$('f_name').value.trim();if(!name){$('f_name').focus();$('f_name').style.outline='2px solid #d33';return}$('f_name').style.outline='';
-  const rec={name,due:$('f_due').value,req:$('f_req').value.trim(),notes:$('f_notes').value.trim(),opp:+$('f_opp').value,imp:formImp(),mtg:+$('f_mtg').value||1,first:$('f_first').checked,prev:$('f_prev').checked,out:+$('f_out').value,sign:+$('f_sign').value,eff:formEff(),seg:Math.max(1,+$('f_seg').value||1),ov:$('f_ov').checked,cq:$('f_cq').checked,wb:$('f_wb').checked,status:$('f_status').value};
+  const rec={name,due:$('f_due').value,req:$('f_req').value.trim(),desc:$('f_desc').value.trim(),mtg:+$('f_mtg').value||1,first:$('f_first').checked,prev:$('f_prev').checked,out:+$('f_out').value,size:+$('f_size').value,reuse:$('f_reuse').checked,opp10:formOpp(),seg:Math.max(1,+$('f_seg').value||1),ov:$('f_ov').checked,cq:$('f_cq').checked,wb:$('f_wb').checked,eff:formEff(),succ:formSucc(),why:$('f_why').value.trim(),status:$('f_status').value};
   let doc;if(editId){doc=Object.assign({},store.pulls.find(i=>i.id===editId),rec)}else{doc=Object.assign({id:uid(),created:Date.now(),by:who()},rec)}
   hlId=doc.id;resetForm();try{await db.put('pulls',doc)}catch(e){alert('Could not save: '+e.message)}
 };
 $('cancelBtn').onclick=resetForm;
+$('aiScore').onclick=async()=>{
+  const name=$('f_name').value.trim(),desc=$('f_desc').value.trim();
+  if(!name||desc.length<15){$('aiMsg').textContent='Add the client name and an embeddings description first.';return}
+  $('aiScore').disabled=true;$('aiMsg').textContent='Researching the company and scoring (about 30 seconds)...';
+  try{const r=await ai('success',{client:name,description:desc});$('f_succ').value=Math.max(1,Math.min(10,Math.round(r.score)));$('f_why').value=r.why||'';$('aiMsg').textContent='Scored. Adjust it if you disagree.';preview()}
+  catch(e){$('aiMsg').textContent=e.message||String(e)}
+  $('aiScore').disabled=false;
+};
 $('rows').addEventListener('click',async e=>{
   const id=e.target.dataset.id;if(!id)return;
-  if(e.target.classList.contains('ed')){const it=store.pulls.find(i=>i.id===id);editId=id;$('f_name').value=it.name;$('f_due').value=it.due||'';$('f_req').value=it.req||'';$('f_notes').value=it.notes||'';$('f_opp').value=it.opp;$('f_mtg').value=it.mtg||1;$('f_first').checked=!!it.first;$('f_prev').checked=!!it.prev;$('f_out').value=it.out!=null?it.out:1;$('f_sign').value=it.sign!=null?it.sign:1;$('f_seg').value=it.seg||1;$('f_ov').checked=!!it.ov;$('f_cq').checked=!!it.cq;$('f_wb').checked=!!it.wb;$('f_status').value=it.status;$('saveBtn').textContent='Save changes';$('cancelBtn').style.display='';$('formTitle').textContent='Edit data pull';preview();window.scrollTo({top:0,behavior:'smooth'})}
+  if(e.target.classList.contains('ed')){const it=store.pulls.find(i=>i.id===id);editId=id;setForm(it);$('saveBtn').textContent='Save changes';$('cancelBtn').style.display='';$('formTitle').textContent='Edit data pull';window.scrollTo({top:0,behavior:'smooth'})}
   if(e.target.classList.contains('del')){if(e.target.dataset.arm==='1')await db.del('pulls',id);else{e.target.dataset.arm='1';e.target.textContent='Confirm?';setTimeout(()=>{e.target.dataset.arm='';e.target.textContent='Delete'},3000)}}
 });
 $('rows').addEventListener('change',async e=>{if(e.target.classList.contains('stsel')){const it=Object.assign({},store.pulls.find(i=>i.id===e.target.dataset.id),{status:e.target.value});await db.put('pulls',it)}});
 $('showDone').onchange=renderQueue;
 function download(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
-$('exCsv').onclick=()=>{const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';const rows=[['Rank','Data pull','Requested by','Due date','Due score','Opportunity','Impact','Effort','Value','Priority','Quadrant','Status','Notes']];ranked(true).forEach(x=>rows.push([x.status==='Done'?'':x.rank,x.name,x.req,x.due,x.c.ds,x.opp,x.imp,x.eff,x.c.value.toFixed(2),x.c.pri.toFixed(2),QN[x.c.q],x.status,x.notes]));download('data-pull-priorities.csv',rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv')};
+$('exCsv').onclick=()=>{const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';const rows=[['Rank','Data pull','Requested by','Due date','Due score','Opportunity /10','Campaign success /10','Effort /5','Value','Priority','Quadrant','Status','Embeddings description','Success rationale']];ranked(true).forEach(x=>rows.push([x.status==='Done'?'':x.rank,x.name,x.req,x.due,x.c.ds,x.c.opp,x.c.succ,x.eff,x.c.value.toFixed(2),x.c.pri.toFixed(2),QN[x.c.q],x.status,x.desc||x.notes||'',x.why||'']));download('data-pull-priorities.csv',rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv')};
+
+/* ---------- manual ordering (drag rows) ---------- */
+let dragId=null;
+async function setMode(m){await db.put('settings',{id:'order',mode:m})}
+$('ordSel').onchange=()=>setMode($('ordSel').value);
+$('rows').addEventListener('dragstart',e=>{const tr=e.target.closest('tr');if(!tr||!tr.dataset.id)return;dragId=tr.dataset.id;e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',dragId)}catch(_){}tr.classList.add('dragging')});
+$('rows').addEventListener('dragend',()=>{dragId=null;document.querySelectorAll('#rows tr').forEach(r=>r.classList.remove('dragging','over-top','over-bot'))});
+$('rows').addEventListener('dragover',e=>{const tr=e.target.closest('tr');if(!tr||!dragId||!tr.dataset.id)return;e.preventDefault();document.querySelectorAll('#rows tr').forEach(r=>r.classList.remove('over-top','over-bot'));const r=tr.getBoundingClientRect();tr.classList.add(e.clientY<r.top+r.height/2?'over-top':'over-bot')});
+$('rows').addEventListener('drop',async e=>{
+  const tr=e.target.closest('tr');if(!tr||!dragId||!tr.dataset.id)return;e.preventDefault();
+  const r=tr.getBoundingClientRect(),after=e.clientY>=r.top+r.height/2,tid=tr.dataset.id,did=dragId;dragId=null;
+  if(tid===did)return;
+  const ids=ranked($('showDone').checked).map(x=>x.id).filter(i=>i!==did);
+  let at=ids.indexOf(tid)+(after?1:0);ids.splice(at,0,did);
+  const rest=store.pulls.filter(p=>ids.indexOf(p.id)<0).sort((a,b)=>(a.ord==null?1e9:a.ord)-(b.ord==null?1e9:b.ord)).map(p=>p.id);
+  const all=ids.concat(rest);
+  try{
+    for(let i=0;i<all.length;i++){const p=store.pulls.find(x=>x.id===all[i]);if(p&&p.ord!==(i+1)*10)await db.put('pulls',Object.assign({},p,{ord:(i+1)*10}))}
+    await setMode('manual');
+  }catch(err){alert('Could not save the new order: '+err.message)}
+});
 
 /* part 2: docx helpers, write-ups, decks */
 const xmlEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
