@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Latis Data Pull Studio</title>
+<style>
+:root{color-scheme:light;--navy:#17191A;--ink:#1c1f24;--muted:#6F6355;--line:#E4D7C6;--cream:#FAF5EE;--bg:#F3EDE3;--qw:#dfe9d6;--bb:#dde6ee;--fi:#f3dfc8;--ts:#e9e4dc}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);font-size:14px}
+header{background:#fff;border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+h1{margin:0;font-size:20px;color:var(--navy)}
+.eyebrow{font-size:10px;letter-spacing:.3em;color:#C0895E;font-weight:bold;text-transform:uppercase;margin-bottom:3px}
+.logo{height:34px}
+footer{max-width:1280px;margin:0 auto;padding:6px 24px 24px;font-size:11px;color:#A99A89}
+.sub{color:var(--muted);font-size:12px}
+nav{display:flex;gap:6px;margin-left:auto}
+nav button{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--ink)}
+nav button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+nav button:hover{border-color:#C0895E}
+main{padding:20px 24px;max-width:1280px;margin:0 auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+h2{margin:0 0 10px;font-size:15px;color:var(--navy)}
+h2::after{content:'';display:block;width:34px;height:2px;background:#C0895E;margin-top:5px}
+.grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+label{display:block;font-size:11px;font-weight:bold;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+input,select,textarea{width:100%;padding:8px;border:1px solid #cdd3dc;border-radius:6px;font:inherit;background:var(--cream)}
+textarea{resize:vertical;min-height:38px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.hint{font-size:11px;color:var(--muted);margin-top:3px}
+.btn{background:var(--navy);color:#fff;border:0;padding:9px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+.btn.sec{background:#fff;color:var(--navy);border:1px solid #17191A}
+.btn.danger{background:#fff;color:#b42318;border:1px solid #f1b5b0}
+.btn.sm{padding:4px 9px;font-size:12px}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--navy);color:#fff;text-align:center;padding:8px 6px;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+th:first-child,td:first-child{text-align:center}
+td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:center;vertical-align:middle}
+td.l,th.l{text-align:left}
+tr.done td{opacity:.45}
+tr.hl td{background:#f6e6d2}
+.q{display:inline-block;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:bold}
+.q.QW{background:var(--qw)}.q.BB{background:var(--bb)}.q.FI{background:var(--fi)}.q.TS{background:var(--ts)}
+.score{display:inline-block;min-width:22px;padding:2px 6px;border-radius:4px;background:#F3EDE3;font-weight:bold}
+.empty{text-align:center;color:var(--muted);padding:30px}
+.tabs>div{display:none}.tabs>div.on{display:block}
+#chartwrap{position:relative}
+svg text{font-family:Arial,Helvetica,sans-serif}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-top:8px;color:var(--muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.keytbl th,.keytbl td{font-size:12px;text-align:left;vertical-align:top;padding:7px}
+.keytbl td:first-child{font-weight:bold;background:#F3EDE3}
+.setg{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.note{font-size:12px;color:var(--muted)}
+#warn{display:none;background:#fff4e5;border:1px solid #f5c98b;color:#7a4a00;padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:12px}
+#tip{position:absolute;pointer-events:none;background:#1c1f24;color:#fff;font-size:12px;padding:6px 9px;border-radius:5px;display:none;max-width:260px;z-index:5}
+.pill{font-size:11px;padding:4px 10px;border-radius:12px;background:#F3EDE3;color:var(--muted);border:1px solid var(--line)}
+.pill.ok{background:#e4efdc;color:#3d6a2e;border-color:#c5dcb8}.pill.warn{background:#fff4e5;color:#7a4a00;border-color:#f5c98b}
+.userbar{display:flex;align-items:center;gap:8px}
+.gate{max-width:520px;margin:60px auto;text-align:center}
+.wi{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px;background:#fff}
+.wi .tag{font-size:10px;letter-spacing:.2em;font-weight:bold;color:#C0895E;text-transform:uppercase}
+details{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fff}
+details>summary{cursor:pointer;padding:10px 12px;font-weight:bold;color:var(--navy);font-size:13px}
+details>div{padding:4px 12px 12px}
+.fld{margin-top:8px}.fld label{text-transform:none;letter-spacing:0;font-weight:normal;font-size:11px}
+.jgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 12px;font-size:12px}
+.jgrid label{text-transform:none;font-weight:normal;letter-spacing:0;font-size:12px;color:var(--ink);display:flex;gap:6px;align-items:flex-start}
+.jgrid input{width:auto;margin-top:2px}
+.msg{font-size:12px;margin-top:8px}.msg.err{color:#b42318}.msg.ok{color:#3d6a2e}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.two{grid-template-columns:1fr}}
+.photos{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.photos div{font-size:10px;color:var(--muted)}
+.photos input{padding:3px;font-size:10px}
+.saved{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.saved .grow{flex:1}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+<header>
+  <img class="logo" alt="Latis" src="data:image/png;base64,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">
+  <div><div class="eyebrow">Latis · Spectrum Reach</div><h1>Latis Data Pull Studio</h1><div class="sub">Prioritize data pulls, write embeddings audiences from an intake form, and produce vertical decks</div></div>
+  <nav id="nav">
+    <button data-t="queue" class="on">Prioritize</button>
+    <button data-t="matrix">Matrix</button>
+    <button data-t="writeups">Write-ups</button>
+    <button data-t="decks">Decks</button>
+    <button data-t="key">Scoring key</button>
+  </nav>
+  <div class="userbar"><span class="pill" id="sync">Starting</span><span class="sub" id="who"></span><button class="btn sec sm" id="signOut" style="display:none">Sign out</button></div>
+</header>
+<main>
+<div id="gate" class="card gate" style="display:none">
+  <h2 style="text-align:left">Sign in</h2>
+  <p class="note" id="gateMsg">Sign in with your company Google account to use the shared workspace.</p>
+  <button class="btn" id="signIn">Sign in with Google</button>
+  <div class="msg err" id="gateErr"></div>
+</div>
+<div id="app">
+<div class="tabs">
+<div id="queue" class="on">
+  <div class="card">
+    <h2 id="formTitle">Log a data pull opportunity</h2>
+    <div class="grid">
+      <div><label>Data pull / client</label><input id="f_name" placeholder="e.g. Fetch Pet Insurance follow-up"></div>
+      <div><label>Due date</label><input id="f_due" type="date"><div class="hint">Converts to a 1&ndash;5 score</div></div>
+      <div><label>Opportunity (1&ndash;5)</label><select id="f_opp"></select></div>
+      <div><label>Expected client outcome</label><select id="f_out"><option value="0">Exploratory only</option><option value="1" selected>Small test campaign</option><option value="2">Planned campaign</option><option value="3">Large or live flight</option></select></div>
+      <div><label>Segments</label><input id="f_seg" type="number" min="1" value="1"></div>
+      <div><label>Status</label><select id="f_status"><option>Open</option><option>In progress</option><option>Done</option></select></div>
+    </div>
+    <div class="row2">
+      <div><label>Requested by</label><input id="f_req" placeholder="Name or team"></div>
+      <div><label>Notes</label><textarea id="f_notes" rows="1" placeholder="Context, links, constraints"></textarea></div>
+    </div>
+    <div class="row2" style="grid-template-columns:repeat(4,1fr);align-items:end">
+      <div><label>Meetings held</label><input id="f_mtg" type="number" min="1" value="1"></div>
+      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0 0 8px"><input type="checkbox" id="f_first" style="width:auto;margin-right:6px">First time meeting them</label>
+      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0 0 8px"><input type="checkbox" id="f_prev" style="width:auto;margin-right:6px">We've done previous pulls for them</label>
+      <div><label>Likely to sign up for Latis?</label><select id="f_sign"><option value="0">Unlikely</option><option value="1" selected>Possible</option><option value="2">Likely</option><option value="3">Committed / signed</option></select></div>
+    </div>
+    <div class="row2" style="grid-template-columns:repeat(3,auto) 1fr;align-items:center">
+      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0"><input type="checkbox" id="f_ov" style="width:auto;margin-right:6px">Overlays (Epsilon, Experian, etc.)</label>
+      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0"><input type="checkbox" id="f_cq" style="width:auto;margin-right:6px">Conquest rule (not on brand's site)</label>
+      <label style="text-transform:none;font-weight:normal;font-size:13px;margin:0"><input type="checkbox" id="f_wb" style="width:auto;margin-right:6px">Win-back rule (used to visit, then left)</label>
+      <span class="note">Effort is calculated from these.</span>
+    </div>
+    <div class="bar">
+      <button class="btn" id="saveBtn">Add to queue</button>
+      <button class="btn sec" id="cancelBtn" style="display:none">Cancel edit</button>
+      <span class="note" id="preview"></span>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <h2 style="margin:0">Priority queue</h2>
+      <label style="margin:0;text-transform:none;font-weight:normal;font-size:13px"><input type="checkbox" id="showDone" style="width:auto;margin-right:4px">Show completed</label>
+      <span class="note" id="count"></span>
+      <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec sm" id="exCsv">Export CSV</button></span>
+    </div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Rank</th><th class="l">Data pull / client</th><th>Due</th><th>Due score</th><th>Opp</th><th>Impact</th><th>Effort</th><th>Value</th><th>Priority</th><th>Quadrant</th><th>Status</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div id="matrix">
+  <div class="card">
+    <h2>Four-box matrix</h2>
+    <div class="note" style="margin-bottom:8px">Each dot is an open pull, numbered by priority rank. Hover for details, click to jump to its row.</div>
+    <div id="chartwrap"><svg id="chart" viewBox="0 0 900 560" width="100%"></svg><div id="tip"></div></div>
+    <div class="legend">
+      <span><i style="background:#5f8a4f"></i>Quick Win: high value, low effort. Do first.</span>
+      <span><i style="background:#4f7396"></i>Big Bet: high value, high effort. Plan and resource.</span>
+      <span><i style="background:#C0895E"></i>Fill-In: low value, low effort. Spare capacity.</span>
+      <span><i style="background:#8d8071"></i>Time Sink: low value, high effort. Decline or rescope.</span>
+    </div>
+  </div>
+</div>
+
+<div id="writeups">
+  <div class="card">
+    <h2>Embeddings write-ups from an intake form</h2>
+    <p class="note">Drop in the completed Data Pull Request Intake Form (.docx). The tool reads it, drafts one combined write-up plus one per segment, and lets you edit before saving or downloading.</p>
+    <div class="two">
+      <div>
+        <label>Intake form (.docx)</label><input type="file" id="w_file" accept=".docx">
+        <div class="hint" id="w_fileMsg"></div>
+        <label style="margin-top:10px">Or paste the intake text</label>
+        <textarea id="w_text" rows="8" placeholder="Extracted intake text appears here. You can edit it or paste text directly."></textarea>
+      </div>
+      <div>
+        <label>Client name (for the file name)</label><input id="w_client" placeholder="e.g. Fetch">
+        <label style="margin-top:10px"><input type="checkbox" id="w_comb" checked style="width:auto;margin-right:6px">Include a combined write-up</label>
+        <div class="bar"><button class="btn" id="w_gen">Draft write-ups</button><span class="note" id="w_status"></span></div>
+        <div class="msg err" id="w_err"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="w_out" style="display:none">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><h2 style="margin:0">Review and edit</h2>
+      <span style="margin-left:auto;display:flex;gap:8px"><button class="btn sec sm" id="w_save">Save to workspace</button><button class="btn sm" id="w_dl">Download .docx</button></span></div>
+    <div id="w_items"></div>
+  </div>
+  <div class="card"><h2>Saved write-ups</h2><div id="w_saved"></div></div>
+</div>
+
+<div id="decks">
+  <div class="card">
+    <h2>Industry deck</h2>
+    <p class="note">Pick an industry and generate. The tool writes the industry-specific slides (journey, audience map, third-party comparison, footprint, Feature Store journeys, use cases, cover and divider) and downloads the finished deck. All other slides stay as the standard template.</p>
+    <div class="grid" style="grid-template-columns:1fr 1fr 2fr">
+      <div><label>Industry</label><select id="d_vert"></select></div>
+      <div id="d_customRow" style="display:none"><label>Industry name</label><input id="d_custom" placeholder="e.g. Pet Care"></div>
+      <div style="align-self:end"><button class="btn" id="d_gen">Generate deck</button></div>
+    </div>
+    <div class="msg" id="d_msg"></div>
+  </div>
+</div>
+
+<div id="key">
+  <div class="card">
+    <h2>Scoring key (1 = lowest, 5 = highest)</h2>
+    <div style="overflow-x:auto"><table class="keytbl">
+      <thead><tr><th>Criterion</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
+      <tbody>
+        <tr><td>Due date<br><span style="font-weight:normal">entered as a date, converted to a score</span></td><td>No deadline, or 31+ days out</td><td>15&ndash;30 days out</td><td>8&ndash;14 days out</td><td>4&ndash;7 days out</td><td>3 days or less, or overdue</td></tr>
+        <tr><td>Opportunity</td><td>One-off or small request; no pipeline attached</td><td>Single early-stage prospect; interest not yet qualified</td><td>Qualified prospect with beta or campaign potential</td><td>Strategic account, or reusable across several clients or verticals</td><td>High-value or live beta client; likely to close or expand</td></tr>
+        <tr><td>Impact<br><span style="font-weight:normal">calculated</span></td><td colspan="5">Adds points for: expected client outcome (exploratory 0, small test 1, planned campaign 2, large or live flight 3); likelihood to sign up for Latis (unlikely 0, possible 1, likely 2, committed 3); relationship (first meeting 0, 2&ndash;3 meetings +1, 4 or more +2); and previous pulls done (+1). Score = 1 + total &divide; 2, rounded down, max 5.</td></tr>
+        <tr><td>Effort<br><span style="font-weight:normal">calculated, 5 = most effort</span></td><td colspan="5">Starts at 1. <b>+1</b> for 2&ndash;3 segments, <b>+2</b> for 4 or more. <b>+1</b> if an overlay is needed (Epsilon, Experian, etc.). <b>+1</b> for a conquest rule (exclude the brand's site). <b>+1</b> for a win-back rule (used to visit, then left). Capped at 5.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note"><b>Value</b> = average of due-date score, Opportunity and Impact (3 or higher counts as high). <b>Priority</b> = (due-date + Opportunity + Impact) &divide; Effort. Effort of 3 or lower counts as low. Ties go to the higher due-date score.</p>
+  </div>
+</div>
+</div>
+</div>
+</main>
+<footer>Copyright 2026 · Spectrum, confidential and proprietary</footer>
+
+<script>
+window.LATIS_JOURNEYS=[{"id": "AUT_CARSHARE", "cat": "Automotive", "name": "Car-share & vehicle-subscription adoption", "action": "Car-share, hourly rental or vehicle-subscription membership started (sign-up path; recurring booking cadence begins)", "window": "7–30 days"}, {"id": "AUT_EV", "cat": "Automotive", "name": "EV consideration & purchase", "action": "EV acquired (registration match) or home-charger installation signal (charger vendor purchase path, new EVSE device on network)", "window": "90–180 days"}, {"id": "AUT_POWER", "cat": "Automotive", "name": "Motorcycle & powersports purchase", "action": "Motorcycle, ATV, side-by-side or personal watercraft acquired (dealer transaction path; financing application; registration match where available)", "window": "30–90 days"}, {"id": "AUT_NEW", "cat": "Automotive", "name": "New-vehicle purchase", "action": "New vehicle acquired (registration match, dealer transaction path, or research drop-off after Desire with financing application)", "window": "60–120 days"}, {"id": "AUT_RV", "cat": "Automotive", "name": "RV & camper purchase", "action": "RV, travel trailer or camper van acquired (dealer or marketplace transaction path; RV financing application followed by research drop-off)", "window": "60–180 days"}, {"id": "AUT_TRUCK", "cat": "Automotive", "name": "Truck & work-vehicle purchase", "action": "Pickup / work vehicle acquired (registration match or dealer transaction path)", "window": "60–120 days"}, {"id": "AUT_USED", "cat": "Automotive", "name": "Used-vehicle purchase", "action": "Used vehicle acquired (marketplace transaction path, history-report + financing sequence, registration match)", "window": "30–75 days"}, {"id": "AUT_SERVICE", "cat": "Automotive", "name": "Vehicle service & maintenance", "action": "Service booked or parts purchased (scheduler confirmation path, parts-retailer checkout)", "window": "3–14 days"}, {"id": "SMB_START", "cat": "Business & Industrial", "name": "Small-business formation / home-business setup", "action": "Business formed (formation-service path, EIN / state-registration destinations, merchant / payroll account setup)", "window": "30–90 days"}, {"id": "RET_CE", "cat": "Consumer Electronics", "name": "Consumer-electronics purchase (TV, laptop, tablet, audio)", "action": "Device purchased — confirmed when a new device of the researched class appears on the home network (device census first-seen) or via checkout path / panel match", "window": "14–45 days"}, {"id": "EDU_COLLEGE", "cat": "Education", "name": "College-bound household", "action": "Enrollment / deposit (institution portal activation; tuition-payment destinations; dorm-outfitting burst)", "window": "6–12 months"}, {"id": "EDU_ONLINE", "cat": "Education", "name": "Online course / upskilling enrollment", "action": "Course or program enrollment (platform enrollment path + sustained platform sessions)", "window": "7–30 days"}, {"id": "LIF_WED", "cat": "Family & Life Stage", "name": "Getting married", "action": "Wedding occurs (vendor-payment / RSVP-platform activity peaks then ends; honeymoon booking; name-change destinations)", "window": "9–15 months"}, {"id": "LIF_BABY", "cat": "Family & Life Stage", "name": "New baby (expecting → arrival → consumables)", "action": "Baby arrives (registry completion → nursery / monitor device first-seen → consumables cadence begins)", "window": "6–9 months"}, {"id": "FIN_BANK", "cat": "Financial Services", "name": "Bank switch / new deposit account", "action": "New checking / savings account opened (application path completion)", "window": "14–45 days"}, {"id": "FIN_CARD", "cat": "Financial Services", "name": "Credit-card acquisition", "action": "Card application submitted / account opened (issuer application path; card-panel new-account match)", "window": "7–30 days"}, {"id": "FIN_FINTECH", "cat": "Financial Services", "name": "Fintech / crypto platform adoption", "action": "Fintech or exchange account activated (sign-up path + sustained app traffic)", "window": "7–30 days"}, {"id": "FIN_INVEST", "cat": "Financial Services", "name": "Investment-account opening", "action": "Brokerage / robo-advisor / retirement account opened (open-account path completion)", "window": "14–45 days"}, {"id": "FIN_FINANCING", "cat": "Financial Services", "name": "Point-of-sale financing / BNPL adoption", "action": "Financing offer used (BNPL / store-card application path at checkout)", "window": "1–14 days"}, {"id": "QSR_DELIVERY", "cat": "Food & Dining", "name": "App-based food-ordering episode", "action": "Order placed (delivery-platform or restaurant-app order path); recurring episodes", "window": "Minutes–hours per episode"}, {"id": "GAM_CONSOLE", "cat": "Gaming", "name": "Gaming-platform purchase (console / gaming PC)", "action": "New console or gaming PC appears on the home network (device census first-seen) — deterministic", "window": "14–60 days"}, {"id": "RET_GROCERY_ONLINE", "cat": "Grocery & CPG", "name": "Online-grocery adoption & weekly basket", "action": "Online grocery order placed (delivery / pickup platform order path); weekly recurrence once adopted", "window": "Adoption 7–21 days; episode 1–7 days"}, {"id": "HLT_FITNESS", "cat": "Health & Fitness (behavioral)", "name": "Fitness equipment / membership purchase", "action": "Connected-fitness device appears on network, or gym / class membership sign-up path", "window": "14–45 days"}, {"id": "FIN_MORTGAGE", "cat": "Home Finance & Lending", "name": "Mortgage origination (purchase or refinance)", "action": "Mortgage originated (origination record match or lender application path + closing sequence)", "window": "30–90 days"}, {"id": "HOM_FURNISH", "cat": "Home Furnishings", "name": "Furniture purchase", "action": "Furniture purchased (retailer checkout / financing path; delivery-tracking destinations; retail outcome panel match)", "window": "21–45 days"}, {"id": "HOM_MATTRESS", "cat": "Home Furnishings", "name": "Mattress & bedroom refresh", "action": "Mattress / bedroom set purchased (DTC or retailer checkout, financing path)", "window": "14–45 days"}, {"id": "HOM_IMPROVE", "cat": "Home Improvement", "name": "Home-improvement project", "action": "Project executed (big-box checkout path, contractor booking, permit-lookup + materials sequence; card-panel match)", "window": "21–60 days"}, {"id": "HOM_LAWN", "cat": "Home Improvement", "name": "Lawn, garden & outdoor-living project", "action": "Outdoor project purchase (garden-center / big-box outdoor checkout, outdoor-furniture or equipment purchase)", "window": "14–45 days"}, {"id": "INS_AUTO", "cat": "Insurance", "name": "Auto-insurance shop & switch", "action": "Policy bound (carrier bind path completion; industry-data match)", "window": "7–21 days"}, {"id": "INS_HEALTH_OEP", "cat": "Insurance", "name": "Health-plan open-enrollment shopping", "action": "Plan selected (exchange / carrier enrollment path completion)", "window": "14–45 days"}, {"id": "INS_HOME", "cat": "Insurance", "name": "Home-insurance shop & switch", "action": "Policy bound (carrier bind path; industry-data match); frequently co-terminal with RE_BUY Action", "window": "7–30 days"}, {"id": "INS_LIFE", "cat": "Insurance", "name": "Life-insurance shop", "action": "Policy applied / bound (carrier application path)", "window": "14–60 days"}, {"id": "MED_TICKETS", "cat": "Media & Entertainment", "name": "Live-event ticket purchase", "action": "Tickets purchased (primary / resale ticketing confirmation path)", "window": "3–21 days"}, {"id": "MED_THEATRICAL", "cat": "Media & Entertainment", "name": "Theatrical movie outing", "action": "Movie tickets purchased (theater-chain or ticketing checkout path)", "window": "1–14 days"}, {"id": "PET_NEW", "cat": "Pets", "name": "New pet acquisition", "action": "Pet acquired (adoption / breeder path → onboarding retail burst: crate, food subscription, vet-registration pages)", "window": "21–60 days"}, {"id": "RE_BUY", "cat": "Real Estate", "name": "Home purchase", "action": "Property acquired (transaction record match; or closing-adjacent sequence: lender application → title/insurance → move signals)", "window": "90–180 days"}, {"id": "RE_MOVE", "cat": "Real Estate", "name": "Household move / relocation", "action": "Move completed (address-change destinations + device turnover on the network; service-transfer patterns)", "window": "30–90 days"}, {"id": "RE_RENT", "cat": "Real Estate", "name": "Rental search & lease", "action": "Lease signed (application-path signal on rental platform + move signals)", "window": "21–60 days"}, {"id": "RET_APPAREL", "cat": "Retail & Shopping", "name": "Apparel purchase episode", "action": "Apparel order placed (retailer checkout path; retail outcome panel match)", "window": "3–14 days"}, {"id": "RET_BTS", "cat": "Retail & Shopping", "name": "Back-to-school", "action": "School-supply / apparel / tech purchases placed (checkout paths in the BTS window)", "window": "3–6 weeks"}, {"id": "RET_HOLIDAY", "cat": "Retail & Shopping", "name": "Holiday gifting season", "action": "Gift purchases placed (multi-retailer checkout paths, BNPL / store-card use, shipping-tracker destinations)", "window": "4–8 weeks"}, {"id": "HOM_SMART", "cat": "Smart Home & IoT", "name": "Smart-home & security adoption", "action": "New smart-home / security device class appears on the home network (device census first-seen) — deterministic, in-platform", "window": "14–45 days"}, {"id": "REC_MARINE", "cat": "Sports & Recreation", "name": "Boat & marine purchase", "action": "Boat acquired (dealer or marketplace transaction path; marine financing and insurance sequence followed by research drop-off)", "window": "60–180 days"}, {"id": "REC_EBIKE", "cat": "Sports & Recreation", "name": "E-bike & micromobility purchase", "action": "E-bike or e-scooter purchased (brand or specialty-retailer checkout path; companion app or connected device first seen on the network)", "window": "14–45 days"}, {"id": "MED_STREAM_ADD", "cat": "Subscriptions & Streaming", "name": "Streaming-subscription add", "action": "New SVOD / vMVPD subscription started (sign-up path + sustained app sessions; subscription-event match)", "window": "7–21 days"}, {"id": "MED_STREAM_CHURN", "cat": "Subscriptions & Streaming", "name": "Streaming-subscription re-evaluation & cancel (churn journey)", "action": "Subscription cancelled or switched (cancel-flow path; session cessation)", "window": "14–45 days"}, {"id": "TEL_CARRIER_SWITCH", "cat": "Telecom", "name": "Mobile-carrier switch", "action": "Port-out / new carrier activation (carrier activation path; new-carrier app traffic; switching-panel match)", "window": "7–30 days"}, {"id": "TEL_HANDSET", "cat": "Telecom", "name": "Smartphone upgrade", "action": "New phone appears on the home network (device census first-seen: brand / model) — deterministic", "window": "7–30 days"}, {"id": "TRV_CRUISE", "cat": "Travel & Transportation", "name": "Cruise booking", "action": "Cruise booked (cruise-line / agency confirmation path)", "window": "21–60 days"}, {"id": "TRV_LEISURE", "cat": "Travel & Transportation", "name": "Leisure trip planning → booking", "action": "Trip booked (OTA / airline / hotel confirmation path; research drop-off signature; booking-confirmation match)", "window": "14–35 days"}, {"id": "TRV_THEMEPARK", "cat": "Travel & Transportation", "name": "Theme-park trip", "action": "Park tickets / package purchased (park ticketing path; on-site hotel booking)", "window": "21–60 days"}];
+window.LATIS_VJ={"Automotive": ["AUT_NEW", "AUT_USED", "AUT_EV", "AUT_TRUCK", "AUT_RV", "AUT_POWER", "AUT_SERVICE", "AUT_CARSHARE"], "Consumer Electronics": ["RET_CE", "GAM_CONSOLE", "HOM_SMART", "TEL_CARRIER_SWITCH", "TEL_HANDSET"], "Education": ["EDU_COLLEGE", "EDU_ONLINE"], "Financial Services": ["FIN_CARD", "FIN_BANK", "FIN_FINANCING", "FIN_FINTECH", "FIN_INVEST", "FIN_MORTGAGE", "INS_AUTO", "INS_HEALTH_OEP"], "Food & Dining": ["QSR_DELIVERY", "RET_GROCERY_ONLINE"], "Real Estate": ["RE_BUY", "FIN_MORTGAGE", "RE_MOVE", "RE_RENT"], "Retail & Shopping": ["HOM_IMPROVE", "HOM_FURNISH", "HOM_LAWN", "HOM_MATTRESS", "RET_APPAREL", "RET_BTS", "RET_HOLIDAY"], "Sports & Recreation": ["HLT_FITNESS", "MED_THEATRICAL", "MED_TICKETS", "REC_EBIKE", "REC_MARINE"], "Travel & Transportation": ["TRV_LEISURE", "TRV_CRUISE", "TRV_THEMEPARK"]};
+window.LATIS_AUTO={"vertical": "Automotive", "journey": {"title": "We see the journey long before the key actions (ex: vehicle purchase)", "curveLabel": "PURCHASE INTENT", "daysText": "Fifteen", "cols": [{"day": "DAY 01", "desc": "A car-review show on TV, watched in the evening", "feature": "Automotive Interest"}, {"day": "DAY 04", "desc": "Reading model reviews and trim comparisons on a laptop", "feature": "Model Comparison"}, {"day": "DAY 07", "desc": "Checking local inventory and monthly payments on a phone", "feature": "Local Inventory Search"}, {"day": "DAY 10", "desc": "Building a vehicle in the configurator and pricing a lease at home", "feature": "Configurator & Pricing"}, {"day": "DAY 13", "desc": "Locating a dealer and scheduling a test drive", "feature": "Test-Drive Intent"}, {"day": "DAY 15", "desc": "The purchase — financing pre-approved, vehicle bought from a dealer", "feature": "Vehicle Purchase Intent"}, {"day": "AND AFTER", "desc": "Insurance, accessories and service — the next journeys already forming", "feature": "Vehicle Service Intent"}], "opportunity": "Fifteen days of intent a purchase file, panel or page-level signal can't see. Addressable, available as audiences, signals, insights."}, "map": {"days": ["Car-review show on TV", "Model reviews and trims", "Local inventory, payments", "Configurator and lease pricing", "Dealer and test drive", "The purchase", "Insurance, accessories, service"], "stages": {"awareness": {"aud": ["New-vehicle purchase", "EV consideration", "Truck & work-vehicle"], "desc": "In the category, no brand set. Widest reach."}, "interest": {"aud": ["New-vehicle purchase", "Used-vehicle purchase", "EV consideration", "Motorcycle & powersports"], "desc": "Heating up, comparing models. Cuts: momentum, intensity."}, "desire": {"aud": ["New-vehicle purchase", "Used-vehicle purchase", "EV consideration", "RV & camper purchase"], "desc": "Pricing, inventory, test drives. Cuts: likelihood to act in 30 days, timing."}, "action": {"aud": ["New-vehicle acquired", "Used-vehicle acquired"], "desc": "Purchase made."}, "post": {"aud": ["Vehicle service & maintenance", "Car-share & subscription"], "desc": "Next journey forming."}}}, "third": {"eyebrow": "COMPARED WITH THIRD-PARTY AUTO AUDIENCES", "title": "Third-party auto audiences start from ownership or one site", "cols": [{"name": "S&P Global Mobility", "sub": "Polk Audiences", "built": "Ownership, loyalty and financial analytics; in-market and future in-market scores", "sees": "125M+ U.S. households, as modeled", "stage": "In-market timing window", "gap": "Inferred from past ownership, not current behavior"}, {"name": "Experian Automotive", "sub": "Auto audiences", "built": "Vehicle title and registration data plus ConsumerView; modeled in-market audiences", "sees": "Households planning to buy in the next 6 months", "stage": "In-market window; body style, make, fuel type", "gap": "Modeled, not observed"}, {"name": "Cox Automotive", "sub": "Autotrader, KBB, Fullpath", "built": "Dealer CRM, DMS and service records plus vehicle-view activity on Autotrader and KBB", "sees": "Shoppers on its own marketplaces and dealer sites", "stage": "Active shopper vs. dealer database", "gap": "Sees only shoppers who reach its sites"}, {"name": "Cars Commerce", "sub": "Cars.com audiences", "built": "Shopper actions on Cars.com: searches, vehicle detail views, saved cars, leads", "sees": "Active shoppers on Cars.com, kept 90 days after last visit", "stage": "In-market shopper, refreshed daily", "gap": "Sees only shoppers who reach Cars.com"}], "footnote": "Based on public vendor materials (S&P Global Mobility, Experian, Cox Automotive, Cars Commerce), October 2026; capabilities change and should be validated by vertical. Cox/Fullpath integration roadmap is forward-looking."}, "footprint": {"intentLabel": "Auto Purchase Intent HHs", "intentDesc": "The full in-market opportunity across Charter's footprint: households actively researching, comparing and shopping new and used vehicles, service and aftermarket.", "winLabel": "Win-Back & Conquest HHs", "winDesc": "Already engaged in the category: prior brand or dealer engagement, now shopping competing makes and models, or 2x+ visits to competing OEM or marketplace sites, no activity on the advertiser's brand in 60 days."}, "featureStore": {"callout": "Whether a household is shopping for a new vehicle or booking service, every automotive journey is read on the same six stages and 22 features, refreshed daily."}, "useCases": [{"title": "Competitor OEM Conquesting", "desc": "Households with 2x+ engagement on competing brand sites and no signal for the advertiser's make."}, {"title": "In-Market Vehicle Shopper Acquisition", "desc": "Households researching, comparing and pricing vehicles on marketplace and review sites."}, {"title": "Lapsed Owner & Intender Win-Back", "desc": "Prior brand engagement that has gone quiet, now shopping competing models."}, {"title": "Lease-End & Trade-In Timing Activation", "desc": "Households researching valuations and payoffs near lease or loan end, a high-intent upgrade window."}, {"title": "EV & Hybrid Consideration Activation", "desc": "Households comparing EV and hybrid models, incentives and charging, before brand preference forms."}, {"title": "Service & Parts Intent Activation", "desc": "Households researching repair, parts and tires, an opening for service and aftermarket offers."}], "journeyIds": ["AUT_NEW", "AUT_USED", "AUT_EV", "AUT_TRUCK", "AUT_RV", "AUT_POWER", "AUT_SERVICE", "AUT_CARSHARE"]};
+
+// Patches the Latis vertical template (.pptx) with vertical-specific content.
+// Works in browsers (global LatisPatch) and Node (module.exports) given a JSZip constructor.
+(function (root) {
+  const RX = /<a:t(?: [^>]*)?>([^<]*)<\/a:t>/g;
+  const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const unesc = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
+
+  // map: index -> string | function(originalUnescapedText) -> string
+  function patchText(xml, map) {
+    let i = -1;
+    return xml.replace(RX, (m, inner) => {
+      i++;
+      if (!(i in map)) return m;
+      const v = typeof map[i] === "function" ? map[i](unesc(inner)) : map[i];
+      if (v == null) return m;
+      const open = m.slice(0, m.indexOf(">") + 1);
+      return open + esc(v) + "</a:t>";
+    });
+  }
+
+  function removeCards(xml, keep) {
+    const sps = xml.match(/<p:sp>[\s\S]*?<\/p:sp>/g) || [];
+    let out = xml;
+    for (let k = keep; k < 8; k++) for (let j = 5 + 4 * k; j <= 8 + 4 * k; j++) out = out.replace(sps[j], "");
+    if (keep <= 4) {
+      // second row is empty: pull the callout box up
+      [sps[37], sps[38]].forEach((sp) => {
+        out = out.replace(sp, sp.replace(/(<a:off x="\d+" y=")5520000(")/, "$13720000$2"));
+      });
+    }
+    return out;
+  }
+
+  function lc(v) { return String(v).toLowerCase(); }
+
+  function build(c, ctx) {
+    const V = c.vertical;
+    const files = {};
+    // slide1 cover
+    files["ppt/slides/slide1.xml"] = (x) => patchText(x, { 1: V + " vertical" });
+    // slide5 divider
+    files["ppt/slides/slide5.xml"] = (x) => patchText(x, { 1: "Latis + " + V });
+    // slide8 journey
+    files["ppt/slides/slide8.xml"] = (x) => {
+      const m = { 0: c.journey.title, 1: c.journey.curveLabel, 40: (t) => t.replace(/^\S+/, c.journey.daysText) };
+      const D = [9, 13, 17, 21, 25, 29, 34];
+      c.journey.cols.forEach((col, i) => { m[D[i]] = col.day; m[D[i] + 1] = col.desc; m[D[i] + 2] = col.feature; });
+      return patchText(x, m);
+    };
+    // slide9 journey -> audiences
+    files["ppt/slides/slide9.xml"] = (x) => {
+      const m = { 2: (t) => t.replace(/automotive/i, lc(V)) };
+      const D = [3, 6, 9, 12, 15, 18, 21];
+      c.map.days.forEach((d, i) => { m[D[i]] = c.journey.cols[i].day; m[D[i] + 1] = d; });
+      const S = { awareness: [31, 33, 35, 36], interest: [39, 41, 43, 45, 46], desire: [49, 51, 53, 55, 56], action: [59, 61, 62], post: [65, 67, 68] };
+      Object.keys(S).forEach((k) => {
+        const idx = S[k], st = c.map.stages[k];
+        for (let j = 0; j < idx.length - 1; j++) m[idx[j]] = st.aud[j] || "";
+        m[idx[idx.length - 1]] = st.desc;
+      });
+      return patchText(x, m);
+    };
+    // slide10 third-party comparison
+    files["ppt/slides/slide10.xml"] = (x) => {
+      const t = c.third, m = { 0: t.eyebrow, 1: t.title, 40: t.footnote };
+      t.cols.forEach((col, i) => {
+        m[4 + 2 * i] = col.name; m[5 + 2 * i] = col.sub;
+        m[15 + i] = col.built; m[21 + i] = col.sees; m[27 + i] = col.stage; m[33 + i] = col.gap;
+      });
+      return patchText(x, m);
+    };
+    // slide11 footprint
+    files["ppt/slides/slide11.xml"] = (x) => {
+      const f = c.footprint;
+      return patchText(x, { 1: V + "'s signal footprint on ", 7: f.intentLabel, 8: f.intentDesc, 10: f.winLabel, 11: f.winDesc });
+    };
+    // slide13 feature-store journeys
+    files["ppt/slides/slide13.xml"] = (x) => {
+      const J = ctx.journeys.slice(0, 8), n = J.length;
+      const m = {
+        1: V + " journeys, pre-built on the Latis Feature Store",
+        2: (t) => t.replace(/^\d+/, n).replace(/automotive/i, lc(V)),
+        37: c.featureStore.callout,
+      };
+      J.forEach((j, k) => {
+        m[5 + 4 * k] = j.name;
+        m[6 + 4 * k] = "Decision window: " + j.window;
+        m[8 + 4 * k] = j.action;
+      });
+      const out = patchText(x, m);
+      return n < 8 ? removeCards(out, n) : out;
+    };
+    // slide14 use cases
+    files["ppt/slides/slide14.xml"] = (x) => {
+      const m = { 2: " + " + V + " use cases" };
+      c.useCases.forEach((u, j) => { m[8 + 4 * j] = u.title; m[9 + 4 * j] = u.desc; });
+      return patchText(x, m);
+    };
+    // slide23 discussion
+    files["ppt/slides/slide23.xml"] = (x) => patchText(x, { 2: V.toUpperCase() });
+    return files;
+  }
+
+  // JSZip: constructor; template: ArrayBuffer/Uint8Array; content: schema in README; ctx: {journeys:[...]}
+  // photos: optional array of 7 Uint8Array (jpeg) to replace the journey strip images.
+  async function buildDeck(JSZip, template, content, ctx, photos) {
+    const zip = await JSZip.loadAsync(template);
+    const files = build(content, ctx);
+    for (const path of Object.keys(files)) {
+      const xml = await zip.file(path).async("string");
+      zip.file(path, files[path](xml));
+    }
+    if (photos && photos.length) {
+      photos.forEach((p, i) => { if (p) zip.file("ppt/media/image" + (10 + i) + ".jpeg", p); });
+    }
+    return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
+  }
+
+  const api = { buildDeck, patchText, build };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LatisPatch = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+(function(){
+/* part 1: core, storage, auth, prioritize */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const CFG=window.FIREBASE_CONFIG, DOMAIN=window.ALLOWED_DOMAIN||'';
+const LIVE=!!(CFG&&CFG.apiKey&&CFG.apiKey.indexOf('YOUR_')<0&&window.firebase);
+const COLS=['pulls','writeups','decks'];
+
+/* ---------- storage: Firestore when configured, localStorage otherwise ---------- */
+let fb=null,user=null;
+const store={pulls:[],writeups:[],decks:[]};
+const subs=[];
+function localKey(c){return 'latis-studio-'+c}
+function localLoad(c){try{return JSON.parse(localStorage.getItem(localKey(c))||'[]')}catch(e){return []}}
+function localSave(c){try{localStorage.setItem(localKey(c),JSON.stringify(store[c]))}catch(e){}}
+function setSync(t,cls){const p=$('sync');p.textContent=t;p.className='pill '+(cls||'')}
+const db={
+  async put(c,doc){
+    doc.updated=Date.now();
+    if(LIVE){await fb.firestore().collection(c).doc(doc.id).set(JSON.parse(JSON.stringify(doc)))}
+    else{const i=store[c].findIndex(x=>x.id===doc.id);if(i<0)store[c].push(doc);else store[c][i]=doc;localSave(c);rerender()}
+  },
+  async del(c,id){
+    if(LIVE){await fb.firestore().collection(c).doc(id).delete()}
+    else{store[c]=store[c].filter(x=>x.id!==id);localSave(c);rerender()}
+  }
+};
+function startData(){
+  if(LIVE){
+    subs.forEach(f=>f());subs.length=0;
+    COLS.forEach(c=>{subs.push(fb.firestore().collection(c).onSnapshot(s=>{store[c]=s.docs.map(d=>d.data());rerender();setSync('Synced','ok')},e=>{setSync('Sync error','warn');console.error(e)}))});
+  }else{COLS.forEach(c=>store[c]=localLoad(c));setSync('Local mode (this browser only)','warn');rerender()}
+}
+function rerender(){renderQueue();renderWSaved()}
+
+/* ---------- auth ---------- */
+function allowed(email){return !DOMAIN||DOMAIN.indexOf('YOUR')===0||(email||'').toLowerCase().endsWith('@'+DOMAIN.toLowerCase())}
+function boot(){
+  if(!LIVE){$('gate').style.display='none';$('app').style.display='';startData();return}
+  fb=window.firebase;fb.initializeApp(CFG);
+  $('app').style.display='none';$('gate').style.display='';
+  $('gateMsg').textContent='Sign in with your '+(DOMAIN&&DOMAIN.indexOf('YOUR')!==0?'@'+DOMAIN:'company')+' Google account to use the shared workspace.';
+  fb.auth().onAuthStateChanged(u=>{
+    if(u&&u.emailVerified&&allowed(u.email)){user=u;$('gate').style.display='none';$('app').style.display='';$('who').textContent=u.email;$('signOut').style.display='';startData()}
+    else if(u){$('gateErr').textContent='This tool is limited to company accounts.';fb.auth().signOut()}
+    else{subs.forEach(f=>f());subs.length=0;user=null;$('app').style.display='none';$('gate').style.display='';$('who').textContent='';$('signOut').style.display='none';setSync('Signed out','warn')}
+  });
+  $('signIn').onclick=()=>{$('gateErr').textContent='';const p=new fb.auth.GoogleAuthProvider();if(DOMAIN&&DOMAIN.indexOf('YOUR')!==0)p.setCustomParameters({hd:DOMAIN});fb.auth().signInWithPopup(p).catch(e=>$('gateErr').textContent=e.message)};
+  $('signOut').onclick=()=>fb.auth().signOut();
+}
+async function ai(task,payload){
+  if(!LIVE)throw new Error('AI drafting needs the Firebase back end. Finish SETUP.md, then reload.');
+  const r=await fb.functions().httpsCallable('generate',{timeout:170000})({task,payload});
+  return r.data;
+}
+function who(){return user?user.email:'local'}
+
+/* ---------- tabs ---------- */
+function showTab(t){document.querySelectorAll('.tabs>div').forEach(d=>d.classList.toggle('on',d.id===t));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t))}
+$('nav').addEventListener('click',e=>{if(e.target.dataset.t){showTab(e.target.dataset.t);if(e.target.dataset.t==='matrix')drawChart()}});
+
+/* ---------- Prioritize (fixed scoring, no settings) ---------- */
+const VC=3,EC=3;
+function todayMid(){const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate())}
+function daysTo(due){if(!due)return null;const p=due.split('-');return Math.round((new Date(+p[0],+p[1]-1,+p[2])-todayMid())/86400000)}
+function dueScore(due){const d=daysTo(due);if(d===null)return 1;return d<=3?5:d<=7?4:d<=14?3:d<=30?2:1}
+function calc(it){const ds=dueScore(it.due),value=(ds+it.opp+it.imp)/3,pri=(ds+it.opp+it.imp)/it.eff;const hv=value>=VC,le=it.eff<=EC;return{ds,value,pri,q:hv?(le?'QW':'BB'):(le?'FI':'TS')}}
+const QN={QW:'Quick Win',BB:'Big Bet',FI:'Fill-In',TS:'Time Sink'},QC={QW:'#5f8a4f',BB:'#4f7396',FI:'#C0895E',TS:'#8d8071'};
+let editId=null,hlId=null;
+function ranked(incl){const l=store.pulls.filter(i=>incl||i.status!=='Done').map(i=>Object.assign({},i,{c:calc(i)}));l.sort((a,b)=>b.c.pri-a.c.pri||b.c.ds-a.c.ds||(a.created||0)-(b.created||0));l.forEach((x,i)=>x.rank=i+1);return l}
+function fmtDue(due){if(!due)return '<span class="note">none</span>';const d=daysTo(due),p=due.split('-');const t=new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});return t+'<div class="note">'+(d<0?Math.abs(d)+'d overdue':d===0?'today':d+'d')+'</div>'}
+function renderQueue(){
+  const list=ranked($('showDone').checked),body=$('rows');
+  body.innerHTML=!list.length?'<tr><td colspan="12" class="empty">No data pulls logged yet. Add one above.</td></tr>':list.map(x=>{const c=x.c;
+    return '<tr data-id="'+x.id+'" class="'+(x.status==='Done'?'done ':'')+(hlId===x.id?'hl':'')+'"><td><b>'+(x.status==='Done'?'&ndash;':x.rank)+'</b></td><td class="l"><b>'+esc(x.name)+'</b>'+(x.req?'<div class="note">'+esc(x.req)+'</div>':'')+(x.notes?'<div class="note">'+esc(x.notes)+'</div>':'')+'</td><td>'+fmtDue(x.due)+'</td><td><span class="score">'+c.ds+'</span></td><td><span class="score">'+x.opp+'</span></td><td><span class="score">'+x.imp+'</span></td><td><span class="score">'+x.eff+'</span></td><td>'+c.value.toFixed(1)+'</td><td><b>'+c.pri.toFixed(1)+'</b></td><td><span class="q '+c.q+'">'+QN[c.q]+'</span></td><td><select class="stsel" data-id="'+x.id+'" style="background:#fff;padding:4px">'+['Open','In progress','Done'].map(s=>'<option'+(s===x.status?' selected':'')+'>'+s+'</option>').join('')+'</select></td><td style="white-space:nowrap"><button class="btn sec sm ed" data-id="'+x.id+'">Edit</button> <button class="btn danger sm del" data-id="'+x.id+'">Delete</button></td></tr>'}).join('');
+  const open=store.pulls.filter(i=>i.status!=='Done').length;$('count').textContent=open+' open, '+(store.pulls.length-open)+' done';
+  drawChart();
+}
+function drawChart(){
+  const svg=$('chart');if(!svg)return;const W=900,H=560,L=64,R=24,T=20,B=56,pw=W-L-R,ph=H-T-B;
+  const x=v=>L+(v-0.5)/5*pw,y=v=>T+ph-(v-0.5)/5*ph,xc=x(EC+0.5),yc=y(VC-0.0001);let o='';
+  o+='<rect x="'+L+'" y="'+T+'" width="'+(xc-L)+'" height="'+(yc-T)+'" fill="#dfe9d6" opacity=".8"/><rect x="'+xc+'" y="'+T+'" width="'+(L+pw-xc)+'" height="'+(yc-T)+'" fill="#dde6ee" opacity=".85"/><rect x="'+L+'" y="'+yc+'" width="'+(xc-L)+'" height="'+(T+ph-yc)+'" fill="#f3dfc8" opacity=".85"/><rect x="'+xc+'" y="'+yc+'" width="'+(L+pw-xc)+'" height="'+(T+ph-yc)+'" fill="#e9e4dc" opacity=".9"/>';
+  o+='<text x="'+(L+10)+'" y="'+(T+22)+'" font-size="14" font-weight="bold" fill="#5f8a4f">QUICK WINS</text><text x="'+(L+pw-10)+'" y="'+(T+22)+'" font-size="14" font-weight="bold" fill="#4f7396" text-anchor="end">BIG BETS</text><text x="'+(L+10)+'" y="'+(T+ph-10)+'" font-size="14" font-weight="bold" fill="#A9693C">FILL-INS</text><text x="'+(L+pw-10)+'" y="'+(T+ph-10)+'" font-size="14" font-weight="bold" fill="#8d8071" text-anchor="end">TIME SINKS</text>';
+  for(let v=1;v<=5;v++){o+='<line x1="'+x(v)+'" x2="'+x(v)+'" y1="'+(T+ph)+'" y2="'+(T+ph+5)+'" stroke="#888"/><text x="'+x(v)+'" y="'+(T+ph+20)+'" font-size="12" fill="#555" text-anchor="middle">'+v+'</text><line y1="'+y(v)+'" y2="'+y(v)+'" x1="'+(L-5)+'" x2="'+L+'" stroke="#888"/><text x="'+(L-10)+'" y="'+(y(v)+4)+'" font-size="12" fill="#555" text-anchor="end">'+v+'</text>'}
+  o+='<rect x="'+L+'" y="'+T+'" width="'+pw+'" height="'+ph+'" fill="none" stroke="#888"/><line x1="'+xc+'" x2="'+xc+'" y1="'+T+'" y2="'+(T+ph)+'" stroke="#666" stroke-dasharray="6 5"/><line x1="'+L+'" x2="'+(L+pw)+'" y1="'+yc+'" y2="'+yc+'" stroke="#666" stroke-dasharray="6 5"/>';
+  o+='<text x="'+(L+pw/2)+'" y="'+(H-12)+'" font-size="13" font-weight="bold" fill="#333" text-anchor="middle">EFFORT  (1 = low, 5 = high)</text><text transform="translate(16,'+(T+ph/2)+') rotate(-90)" font-size="13" font-weight="bold" fill="#333" text-anchor="middle">VALUE  (avg of due date, opportunity, impact)</text>';
+  const list=ranked(false),seen={};
+  list.forEach(it=>{const k=it.eff+'|'+it.c.value.toFixed(2),n=seen[k]=(seen[k]||0)+1,a=(n-1)*2.4,r=(n-1)*0.07;it.px=x(it.eff+Math.cos(a)*r);it.py=y(it.c.value+Math.sin(a)*r*0.8)});
+  list.forEach(it=>{const col=QC[it.c.q],lab=it.name.length>26?it.name.slice(0,25)+'…':it.name,right=it.px<L+pw-190;
+    o+='<g class="dot" data-id="'+it.id+'" style="cursor:pointer"><circle cx="'+it.px+'" cy="'+it.py+'" r="12" fill="'+col+'" stroke="#fff" stroke-width="2"/><text x="'+it.px+'" y="'+(it.py+4)+'" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">'+it.rank+'</text><text x="'+(right?it.px+17:it.px-17)+'" y="'+(it.py+4)+'" font-size="11" fill="#222" text-anchor="'+(right?'start':'end')+'" paint-order="stroke" stroke="#fff" stroke-width="3">'+esc(lab)+'</text></g>'});
+  if(!list.length)o+='<text x="'+(L+pw/2)+'" y="'+(T+ph/2)+'" font-size="14" fill="#888" text-anchor="middle">Add data pulls to see them plotted</text>';
+  svg.innerHTML=o;const tip=$('tip');
+  svg.querySelectorAll('.dot').forEach(g=>{const it=list.find(z=>z.id===g.dataset.id);
+    g.addEventListener('mousemove',e=>{const r=$('chartwrap').getBoundingClientRect();tip.style.display='block';tip.style.left=(e.clientX-r.left+14)+'px';tip.style.top=(e.clientY-r.top+14)+'px';tip.innerHTML='<b>#'+it.rank+' '+esc(it.name)+'</b><br>'+QN[it.c.q]+' &middot; priority '+it.c.pri.toFixed(1)+'<br>Due '+it.c.ds+' &middot; Opp '+it.opp+' &middot; Impact '+it.imp+' &middot; Effort '+it.eff});
+    g.addEventListener('mouseleave',()=>tip.style.display='none');
+    g.addEventListener('click',()=>{hlId=it.id;showTab('queue');renderQueue();const row=document.querySelector('tr[data-id="'+it.id+'"]');if(row)row.scrollIntoView({block:'center'})})});
+}
+function opts(sel,def){for(let i=1;i<=5;i++){const o=document.createElement('option');o.value=i;o.textContent=i;if(i===def)o.selected=true;sel.appendChild(o)}}
+opts($('f_opp'),3);
+function effortOf(seg,ov,cq,wb){seg=Math.max(1,+seg||1);return Math.min(5,1+(seg>=4?2:seg>=2?1:0)+(ov?1:0)+(cq?1:0)+(wb?1:0))}
+function impactOf(first,mtg,prev,out,sign){const m=first?0:(mtg>=4?2:mtg>=2?1:0);return Math.min(5,1+Math.floor(((+out||0)+(+sign||0)+m+(prev?1:0))/2))}
+function formImp(){return impactOf($('f_first').checked,+$('f_mtg').value||1,$('f_prev').checked,$('f_out').value,$('f_sign').value)}
+function formEff(){return effortOf($('f_seg').value,$('f_ov').checked,$('f_cq').checked,$('f_wb').checked)}
+function preview(){const c=calc({due:$('f_due').value,opp:+$('f_opp').value,imp:formImp(),eff:formEff()});$('preview').innerHTML='Due score <b>'+c.ds+'</b> &middot; Value <b>'+c.value.toFixed(1)+'</b> &middot; Priority <b>'+c.pri.toFixed(1)+'</b> &middot; <span class="q '+c.q+'">'+QN[c.q]+'</span>'}
+['f_due','f_opp','f_mtg','f_first','f_prev','f_out','f_sign','f_seg','f_ov','f_cq','f_wb'].forEach(id=>$(id).addEventListener('input',preview));
+function resetForm(){editId=null;$('f_name').value='';$('f_due').value='';$('f_req').value='';$('f_notes').value='';$('f_opp').value=3;$('f_mtg').value=1;$('f_first').checked=false;$('f_prev').checked=false;$('f_out').value=1;$('f_sign').value=1;$('f_seg').value=1;$('f_ov').checked=false;$('f_cq').checked=false;$('f_wb').checked=false;$('f_status').value='Open';$('saveBtn').textContent='Add to queue';$('cancelBtn').style.display='none';$('formTitle').textContent='Log a data pull opportunity';preview()}
+$('saveBtn').onclick=async()=>{
+  const name=$('f_name').value.trim();if(!name){$('f_name').focus();$('f_name').style.outline='2px solid #d33';return}$('f_name').style.outline='';
+  const rec={name,due:$('f_due').value,req:$('f_req').value.trim(),notes:$('f_notes').value.trim(),opp:+$('f_opp').value,imp:formImp(),mtg:+$('f_mtg').value||1,first:$('f_first').checked,prev:$('f_prev').checked,out:+$('f_out').value,sign:+$('f_sign').value,eff:formEff(),seg:Math.max(1,+$('f_seg').value||1),ov:$('f_ov').checked,cq:$('f_cq').checked,wb:$('f_wb').checked,status:$('f_status').value};
+  let doc;if(editId){doc=Object.assign({},store.pulls.find(i=>i.id===editId),rec)}else{doc=Object.assign({id:uid(),created:Date.now(),by:who()},rec)}
+  hlId=doc.id;resetForm();try{await db.put('pulls',doc)}catch(e){alert('Could not save: '+e.message)}
+};
+$('cancelBtn').onclick=resetForm;
+$('rows').addEventListener('click',async e=>{
+  const id=e.target.dataset.id;if(!id)return;
+  if(e.target.classList.contains('ed')){const it=store.pulls.find(i=>i.id===id);editId=id;$('f_name').value=it.name;$('f_due').value=it.due||'';$('f_req').value=it.req||'';$('f_notes').value=it.notes||'';$('f_opp').value=it.opp;$('f_mtg').value=it.mtg||1;$('f_first').checked=!!it.first;$('f_prev').checked=!!it.prev;$('f_out').value=it.out!=null?it.out:1;$('f_sign').value=it.sign!=null?it.sign:1;$('f_seg').value=it.seg||1;$('f_ov').checked=!!it.ov;$('f_cq').checked=!!it.cq;$('f_wb').checked=!!it.wb;$('f_status').value=it.status;$('saveBtn').textContent='Save changes';$('cancelBtn').style.display='';$('formTitle').textContent='Edit data pull';preview();window.scrollTo({top:0,behavior:'smooth'})}
+  if(e.target.classList.contains('del')){if(e.target.dataset.arm==='1')await db.del('pulls',id);else{e.target.dataset.arm='1';e.target.textContent='Confirm?';setTimeout(()=>{e.target.dataset.arm='';e.target.textContent='Delete'},3000)}}
+});
+$('rows').addEventListener('change',async e=>{if(e.target.classList.contains('stsel')){const it=Object.assign({},store.pulls.find(i=>i.id===e.target.dataset.id),{status:e.target.value});await db.put('pulls',it)}});
+$('showDone').onchange=renderQueue;
+function download(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+$('exCsv').onclick=()=>{const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';const rows=[['Rank','Data pull','Requested by','Due date','Due score','Opportunity','Impact','Effort','Value','Priority','Quadrant','Status','Notes']];ranked(true).forEach(x=>rows.push([x.status==='Done'?'':x.rank,x.name,x.req,x.due,x.c.ds,x.opp,x.imp,x.eff,x.c.value.toFixed(2),x.c.pri.toFixed(2),QN[x.c.q],x.status,x.notes]));download('data-pull-priorities.csv',rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv')};
+
+/* part 2: docx helpers, write-ups, decks */
+const xmlEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function decodeEnt(s){return s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,n)=>String.fromCharCode(+n)).replace(/&#x([0-9a-f]+);/gi,(m,n)=>String.fromCharCode(parseInt(n,16))).replace(/&amp;/g,'&')}
+async function docxText(file){
+  const z=await JSZip.loadAsync(await file.arrayBuffer());
+  let xml=await z.file('word/document.xml').async('string');
+  xml=xml.replace(/<mc:Fallback>[\s\S]*?<\/mc:Fallback>/g,'');
+  const seen=new Set(),out=[];
+  xml.split('</w:p>').forEach(p=>{const t=decodeEnt((p.match(/<w:t(?: [^>]*)?>[^<]*<\/w:t>|<w:tab\/>/g)||[]).map(m=>m==='<w:tab/>'?'\t':m.replace(/<[^>]+>/g,'')).join('')).trim();if(t&&!seen.has(t)){seen.add(t);out.push(t)}});
+  return out.join('\n');
+}
+const FONT='<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>';
+function run(t,o){o=o||{};return '<w:r><w:rPr>'+FONT+(o.b?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'<w:sz w:val="'+(o.sz||22)+'"/></w:rPr><w:t xml:space="preserve">'+xmlEsc(t)+'</w:t></w:r>'}
+function para(runs,o){o=o||{};return '<w:p><w:pPr>'+(o.shade?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shade+'"/>':'')+'<w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?120:o.after)+'"/></w:pPr>'+runs+'</w:p>'}
+async function makeDocx(items,head){
+  let b=para(run(head.title,{b:1,sz:32}),{after:60});
+  if(head.sub)b+=para(run(head.sub,{sz:20,color:'6F6355'}),{after:240});
+  items.forEach((it,i)=>{
+    b+=para(run(it.title,{b:1,sz:26}),{before:i?120:0,after:80});
+    b+=para(run('EMBEDDINGS WRITE-UP',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
+    b+=para(run(it.category,{b:1,sz:22}),{after:80});
+    b+=para(run(it.audienceName,{b:1})+run(' — '+it.paragraph),{after:160});
+    b+=para(run('----------------------------------------',{color:'A99A89'}),{after:160});
+  });
+  const z=new JSZip();
+  z.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  z.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  z.file('word/document.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+b+'<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>');
+  return z.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+const safe=s=>String(s||'').replace(/[\\/:*?"<>|]/g,'').trim();
+
+/* ---------- Write-ups ---------- */
+let W={client:'',items:[],id:null,geo:''};
+$('w_file').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('w_fileMsg').textContent='Reading '+f.name+'...';
+  try{const t=await docxText(f);$('w_text').value=t;$('w_fileMsg').textContent='Read '+t.split('\n').length+' lines from '+f.name;if(!$('w_client').value){const m=t.match(/(?:Client|Brand|Advertiser)[^\n:]*[:\t]\s*([^\n]+)/i);if(m)$('w_client').value=m[1].trim().slice(0,60)}}
+  catch(err){$('w_fileMsg').textContent='Could not read that file. Is it a .docx?'}};
+function renderWItems(){
+  $('w_out').style.display=W.items.length?'':'none';
+  $('w_items').innerHTML=W.items.map((it,i)=>'<div class="wi" data-i="'+i+'"><div class="tag">'+(it.kind==='combined'?'Combined':'Individual')+'</div>'+
+    '<div class="row2"><div><label>Use case title</label><input data-k="title" value="'+esc(it.title)+'"></div><div><label>Category header</label><input data-k="category" value="'+esc(it.category)+'"></div></div>'+
+    '<div class="fld"><label>Audience name</label><input data-k="audienceName" value="'+esc(it.audienceName)+'"></div>'+
+    '<div class="fld"><label>Write-up</label><textarea data-k="paragraph" rows="5">'+esc(it.paragraph)+'</textarea></div>'+
+    '<div class="bar"><button class="btn danger sm wdel" data-i="'+i+'">Remove</button></div></div>').join('');
+}
+$('w_items').addEventListener('input',e=>{const wi=e.target.closest('.wi');if(wi&&e.target.dataset.k)W.items[+wi.dataset.i][e.target.dataset.k]=e.target.value});
+$('w_items').addEventListener('click',e=>{if(e.target.classList.contains('wdel')){W.items.splice(+e.target.dataset.i,1);renderWItems()}});
+$('w_gen').onclick=async()=>{
+  const text=$('w_text').value.trim();$('w_err').textContent='';
+  if(text.length<20){$('w_err').textContent='Drop in an intake form or paste its text first.';return}
+  $('w_gen').disabled=true;$('w_status').textContent='Drafting (about 30 seconds)...';
+  try{const r=await ai('writeups',{intakeText:text,combined:$('w_comb').checked});
+    W={id:uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||''};renderWItems();$('w_status').textContent=W.items.length+' write-ups drafted. Edit anything below.'}
+  catch(e){$('w_err').textContent=e.message||String(e);$('w_status').textContent=''}
+  $('w_gen').disabled=false;
+};
+$('w_dl').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';const b=await makeDocx(W.items,{title:c+' — Embeddings Write-Ups',sub:W.geo?'Geo: '+W.geo:''});download(safe(c)+' Data Pull.docx',b)};
+$('w_save').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';await db.put('writeups',{id:W.id||uid(),client:c,items:W.items,geo:W.geo,by:who(),created:Date.now()});$('w_status').textContent='Saved to workspace.'};
+function renderWSaved(){
+  const l=store.writeups.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
+  $('w_saved').innerHTML=l.length?l.map(w=>'<div class="saved"><div class="grow"><b>'+esc(w.client)+'</b> <span class="note">'+w.items.length+' write-ups &middot; '+esc(w.by||'')+' &middot; '+new Date(w.updated||w.created).toLocaleDateString()+'</span></div><button class="btn sec sm wopen" data-id="'+w.id+'">Open</button><button class="btn danger sm wrm" data-id="'+w.id+'">Delete</button></div>').join(''):'<div class="note">Nothing saved yet.</div>';
+}
+$('w_saved').addEventListener('click',async e=>{const id=e.target.dataset.id;if(!id)return;
+  if(e.target.classList.contains('wopen')){const w=store.writeups.find(x=>x.id===id);W={id:w.id,client:w.client,items:JSON.parse(JSON.stringify(w.items)),geo:w.geo||''};$('w_client').value=w.client;renderWItems();window.scrollTo({top:0,behavior:'smooth'})}
+  if(e.target.classList.contains('wrm')){if(e.target.dataset.arm==='1')await db.del('writeups',id);else{e.target.dataset.arm='1';e.target.textContent='Confirm?';setTimeout(()=>{e.target.dataset.arm='';e.target.textContent='Delete'},3000)}}});
+
+/* ---------- Decks ---------- */
+const JR=window.LATIS_JOURNEYS,BYID=Object.fromEntries(JR.map(j=>[j.id,j])),VJ=window.LATIS_VJ,AUTO=window.LATIS_AUTO;
+const VERTS=Object.keys(VJ).sort();
+$('d_vert').innerHTML=VERTS.map(v=>'<option>'+esc(v)+'</option>').join('')+'<option value="__custom">Other...</option>';
+$('d_vert').value='Automotive';
+$('d_vert').onchange=()=>{$('d_customRow').style.display=$('d_vert').value==='__custom'?'':'none'};
+function vname(){return $('d_vert').value==='__custom'?$('d_custom').value.trim():$('d_vert').value}
+function tile(i,label,v){return new Promise(res=>{const c=document.createElement('canvas');c.width=518;c.height=600;const x=c.getContext('2d');
+  const shades=['#17191A','#2A2622','#3B342C','#4D4338','#6F6355','#A99A89','#C0895E'];x.fillStyle=shades[i];x.fillRect(0,0,518,600);
+  x.fillStyle=i>=5?'#17191A':'#FAF5EE';x.font='bold 30px Arial';x.textAlign='center';x.fillText(label,259,300);x.font='18px Arial';x.fillStyle=i>=5?'#17191A':'#E4D7C6';x.fillText(v.toUpperCase(),259,340);
+  c.toBlob(b=>b.arrayBuffer().then(a=>res(new Uint8Array(a))),'image/jpeg',.9)})}
+function msg(t,c){$('d_msg').className='msg '+(c||'');$('d_msg').textContent=t}
+$('d_gen').onclick=async()=>{
+  const v=vname();if(!v){msg('Enter an industry name.','err');return}
+  $('d_gen').disabled=true;
+  try{
+    let c,ids;
+    if(v==='Automotive'){c=JSON.parse(JSON.stringify(AUTO));ids=c.journeyIds;delete c.journeyIds;msg('Building...')}
+    else{msg('Writing the '+v+' content (about 45 seconds)...');c=await ai('vertical',{vertical:v,notes:''});ids=(VJ[v]&&VJ[v].length)?VJ[v]:(c.journeyIds||[]).filter(i=>BYID[i]);delete c.journeyIds}
+    c.vertical=v;
+    if(!ids||!ids.length)throw new Error('No Feature Store journeys found for this industry.');
+    let ph=null;if(v!=='Automotive'){ph=[];for(let i=0;i<7;i++)ph.push(await tile(i,c.journey.cols[i].day,v))}
+    const tpl=await (await fetch('Latis_Vertical_Template.pptx')).arrayBuffer();
+    const bytes=await LatisPatch.buildDeck(JSZip,tpl,c,{journeys:ids.slice(0,8).map(i=>BYID[i])},ph);
+    download('Latis Vertical Deck '+safe(v)+'.pptx',new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'}));
+    msg('Done. The '+v+' deck was downloaded. Spot-check text fit on slides 7 to 13.','ok');
+  }catch(e){msg(e.message||String(e),'err')}
+  $('d_gen').disabled=false;
+};
+
+window.LatisStudio={makeDocx,docxText,W:()=>W};
+preview();boot();
+
+})();
+</script>
+</body></html>
