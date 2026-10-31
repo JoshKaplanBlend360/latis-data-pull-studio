@@ -93,7 +93,7 @@ details>div{padding:4px 12px 12px}
     <button data-t="decks">Decks</button>
     <button data-t="key">Scoring key</button>
   </nav>
-  <div class="userbar"><span class="pill" id="sync">Starting</span><span class="sub" id="who"></span><button class="btn sec sm" id="signOut" style="display:none">Sign out</button></div>
+  <div class="userbar"><span class="pill" id="sync">Starting</span></div>
 </header>
 <main>
 <div id="gate" class="card gate" style="display:none">
@@ -393,22 +393,16 @@ function allowed(email){return !DOMAIN||DOMAIN.indexOf('YOUR')===0||(email||'').
 function boot(){
   if(!LIVE){$('gate').style.display='none';$('app').style.display='';startData();return}
   fb=window.firebase;fb.initializeApp(CFG);
-  $('app').style.display='none';$('gate').style.display='';
-  $('gateMsg').textContent='Sign in with your '+(DOMAIN&&DOMAIN.indexOf('YOUR')!==0?'@'+DOMAIN:'company')+' Google account to use the shared workspace.';
-  fb.auth().onAuthStateChanged(u=>{
-    if(u&&u.emailVerified&&allowed(u.email)){user=u;$('gate').style.display='none';$('app').style.display='';$('who').textContent=u.email;$('signOut').style.display='';startData()}
-    else if(u){$('gateErr').textContent='This tool is limited to company accounts.';fb.auth().signOut()}
-    else{subs.forEach(f=>f());subs.length=0;user=null;$('app').style.display='none';$('gate').style.display='';$('who').textContent='';$('signOut').style.display='none';setSync('Signed out','warn')}
-  });
-  $('signIn').onclick=()=>{$('gateErr').textContent='';const p=new fb.auth.GoogleAuthProvider();if(DOMAIN&&DOMAIN.indexOf('YOUR')!==0)p.setCustomParameters({hd:DOMAIN});fb.auth().signInWithPopup(p).catch(e=>$('gateErr').textContent=e.message)};
-  $('signOut').onclick=()=>fb.auth().signOut();
+  $('gate').style.display='none';$('app').style.display='';
+  fb.auth().onAuthStateChanged(u=>{if(u){user=u;startData()}});
+  fb.auth().signInAnonymously().catch(e=>{setSync('Sync error','warn');console.error(e)});
 }
 async function ai(task,payload){
   if(!LIVE)throw new Error('AI drafting needs the Firebase back end. Finish SETUP.md, then reload.');
   const r=await fb.functions().httpsCallable('generate',{timeout:170000})({task,payload});
   return r.data;
 }
-function who(){return user?user.email:'local'}
+function who(){return 'team'}
 
 /* ---------- tabs ---------- */
 function showTab(t){document.querySelectorAll('.tabs>div').forEach(d=>d.classList.toggle('on',d.id===t));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t))}
