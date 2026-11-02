@@ -814,8 +814,8 @@ const CHK=/[☒☑✔✓■]/;
 function fld(text,label){const m=String(text).match(new RegExp('^\\s*'+label+'\\s*:\\s*(.+)$','im'));return m?m[1].trim():''}
 function checked(line){const out=[];String(line||'').split(/\s{2,}|(?=[☒☐☑■□])/).forEach(p=>{p=p.trim();if(CHK.test(p))out.push(p.replace(/[☒☑✔✓■]/,'').trim())});return out}
 function parseDue(s,prio){s=String(s||'').trim();const t=new Date();let d=null,note='';
-  let m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);if(m){let y=+m[3];if(y<100)y+=2000;d=new Date(y,+m[1]-1,+m[2])}
-  else{m=s.match(/([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:,?\s*(\d{4}))?/);if(m){const mo=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m[1].slice(0,3).toLowerCase());if(mo>=0)d=new Date(m[3]?+m[3]:t.getFullYear(),mo,+m[2])}}
+  let m=s.match(/(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?(?!\d)/);if(m&&+m[1]<=12&&+m[2]<=31){let y=m[3]?+m[3]:t.getFullYear();if(y<100)y+=2000;d=new Date(y,+m[1]-1,+m[2])}
+  if(!d){m=s.match(/([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:,?\s*(\d{4}))?/);if(m){const mo=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m[1].slice(0,3).toLowerCase());if(mo>=0)d=new Date(m[3]?+m[3]:t.getFullYear(),mo,+m[2])}}
   if(!d&&/asap|urgent|today/i.test(s)){d=new Date(t.getFullYear(),t.getMonth(),t.getDate());note='ASAP, set to today'}
   if(!d&&prio){const add={Urgent:2,High:7,Standard:14,Low:30}[prio];if(add!=null){d=new Date(t.getFullYear(),t.getMonth(),t.getDate()+add);note='Estimated from '+prio+' priority'}}
   if(!d||isNaN(d))return {v:'',note:''};const p=n=>String(n).padStart(2,'0');return {v:d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()),note}}
