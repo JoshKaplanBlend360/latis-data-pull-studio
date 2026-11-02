@@ -262,13 +262,18 @@ table.qt tbody tr{cursor:default}
       <div style="align-self:end"><button class="btn" id="d_gen">Generate deck</button></div>
     </div>
     <div id="d_photos" style="display:none;margin-top:14px">
-      <label>Journey slide photos (optional)</label>
-      <div class="hint">The first four photos (TV, laptop, phone, home) are generic household shots and are kept. Add photos that fit this industry for the last three stages. Any left empty get a neutral labeled tile instead of the car photos.</div>
+      <label>Journey slide photos</label>
+      <div class="hint">For every industry except Automotive, the seven journey photos are picked automatically from the free Pexels library to match the industry. Paste a free Pexels API key once (get one at pexels.com/api); it is kept in this browser only. Without a key the deck keeps the four generic household photos and labeled tiles.</div>
       <div class="frm" style="margin-top:6px">
-        <div><label>Day 13 (e.g. test drive / store visit)</label><input type="file" id="d_p5" accept="image/*"></div>
-        <div><label>Purchase day</label><input type="file" id="d_p6" accept="image/*"></div>
-        <div><label>After purchase</label><input type="file" id="d_p7" accept="image/*"></div>
+        <div class="w2"><label>Pexels API key</label><input id="d_pkey" type="password" placeholder="Paste once; saved in this browser" autocomplete="off"></div>
       </div>
+      <details style="margin-top:8px"><summary class="note" style="cursor:pointer">Optional: use my own photo for the last three stages</summary>
+        <div class="frm" style="margin-top:6px">
+          <div><label>Day 13</label><input type="file" id="d_p5" accept="image/*"></div>
+          <div><label>Purchase day</label><input type="file" id="d_p6" accept="image/*"></div>
+          <div><label>After purchase</label><input type="file" id="d_p7" accept="image/*"></div>
+        </div>
+      </details>
     </div>
     <div class="msg" id="d_msg"></div>
   </div>
@@ -783,8 +788,9 @@ $('w_saved').addEventListener('click',async e=>{const id=e.target.dataset.id;if(
 
 /* ---------- Decks ---------- */
 const JR=window.LATIS_JOURNEYS,BYID=Object.fromEntries(JR.map(j=>[j.id,j])),VJ=window.LATIS_VJ,AUTO=window.LATIS_AUTO;
+if(!VJ['QSR'])VJ['QSR']=['QSR_DELIVERY'];
 const VERTS=Object.keys(VJ).sort();
-$('d_vert').innerHTML=VERTS.map(v=>'<option>'+esc(v)+'</option>').join('')+'<option value="__custom">Other...</option>';
+$('d_vert').innerHTML=VERTS.map(v=>'<option value="'+esc(v)+'">'+esc(v==='QSR'?'QSR (Quick Service Restaurants)':v)+'</option>').join('')+'<option value="__custom">Other...</option>';
 $('d_vert').value='Automotive';
 $('d_vert').onchange=()=>{$('d_customRow').style.display=$('d_vert').value==='__custom'?'':'none';$('d_photos').style.display=$('d_vert').value==='Automotive'?'none':''};$('d_photos').style.display='none';
 function coverJpeg(file){return new Promise((res,rej)=>{const img=new Image(),u=URL.createObjectURL(file);img.onload=()=>{const c=document.createElement('canvas');c.width=518;c.height=600;const x=c.getContext('2d'),s=Math.max(518/img.width,600/img.height),w=img.width*s,h=img.height*s;x.drawImage(img,(518-w)/2,(600-h)/2,w,h);URL.revokeObjectURL(u);c.toBlob(b=>b.arrayBuffer().then(a=>res(new Uint8Array(a))),'image/jpeg',.9)};img.onerror=()=>rej(new Error('Could not read that image file.'));img.src=u})}
@@ -793,6 +799,15 @@ function tile(i,label,v){return new Promise(res=>{const c=document.createElement
   const shades=['#17191A','#2A2622','#3B342C','#4D4338','#6F6355','#A99A89','#C0895E'];x.fillStyle=shades[i];x.fillRect(0,0,518,600);
   x.fillStyle=i>=5?'#17191A':'#FAF5EE';x.font='bold 30px Arial';x.textAlign='center';x.fillText(label,259,300);x.font='18px Arial';x.fillStyle=i>=5?'#17191A':'#E4D7C6';x.fillText(v.toUpperCase(),259,340);
   c.toBlob(b=>b.arrayBuffer().then(a=>res(new Uint8Array(a))),'image/jpeg',.9)})}
+
+const PEX='latis-pexels-key';
+try{$('d_pkey').value=localStorage.getItem(PEX)||''}catch(_){}
+$('d_pkey').addEventListener('change',()=>{try{localStorage.setItem(PEX,$('d_pkey').value.trim())}catch(_){}});
+const QWORD={'QSR':'fast food restaurant','Food & Dining':'restaurant food','Retail & Shopping':'retail shopping','Travel & Transportation':'travel vacation','Financial Services':'banking personal finance','Consumer Electronics':'consumer electronics','Real Estate':'real estate home','Sports & Recreation':'sports recreation','Education':'college education'};
+function photoQueries(v,c){const w=QWORD[v]||v,q=(c.photoQueries||[]).filter(x=>typeof x==='string'&&x.trim());if(q.length>=7)return q.slice(0,7);
+  const cols=c.journey.cols;return ['family watching tv living room',w+' research on laptop at home','woman using smartphone '+w,'couple at kitchen table with laptop '+w,w+' '+(cols[4].feature||'customer'),w+' customer purchase',w+' happy customer']}
+async function pexelsPhoto(q,key){const r=await fetch('https://api.pexels.com/v1/search?per_page=5&orientation=portrait&query='+encodeURIComponent(q),{headers:{Authorization:key}});
+  if(!r.ok)throw new Error('Pexels '+r.status);const j=await r.json(),p=(j.photos||[])[0];if(!p)return null;const bl=await (await fetch(p.src.large)).blob();return coverJpeg(bl)}
 function msg(t,c){$('d_msg').className='msg '+(c||'');$('d_msg').textContent=t}
 $('d_gen').onclick=async()=>{
   const v=vname();if(!v){msg('Enter an industry name.','err');return}
@@ -800,14 +815,22 @@ $('d_gen').onclick=async()=>{
   try{
     let c,ids;
     if(v==='Automotive'){c=JSON.parse(JSON.stringify(AUTO));ids=c.journeyIds;delete c.journeyIds;msg('Building...')}
-    else{msg('Writing the '+v+' content (about 45 seconds)...');c=await ai('vertical',{vertical:v,notes:''});ids=(VJ[v]&&VJ[v].length)?VJ[v]:(c.journeyIds||[]).filter(i=>BYID[i]);delete c.journeyIds}
+    else{msg('Writing the '+v+' content (about 45 seconds)...');c=await ai('vertical',{vertical:v==='QSR'?'QSR (quick-service restaurants)':v,notes:''});ids=(VJ[v]&&VJ[v].length)?VJ[v]:(c.journeyIds||[]).filter(i=>BYID[i]);delete c.journeyIds}
     c.vertical=v;
     if(!ids||!ids.length)throw new Error('No Feature Store journeys found for this industry.');
-    let ph=null;if(v!=='Automotive'){ph=[null,null,null,null];for(let i=4;i<7;i++){const f=$('d_p'+(i+1)).files&&$('d_p'+(i+1)).files[0];ph.push(f?await coverJpeg(f):await tile(i,c.journey.cols[i].day,v))}}
+    let ph=null,pexNote='';
+    if(v!=='Automotive'){
+      const key=$('d_pkey').value.trim(),qs=photoQueries(v,c);let got=[null,null,null,null,null,null,null];
+      if(key){msg('Picking '+v+' photos...');
+        const res=await Promise.allSettled(qs.map(q=>pexelsPhoto(q,key)));got=res.map(r=>r.status==='fulfilled'?r.value:null);
+        const bad=res.filter(r=>r.status==='rejected');if(bad.length===7)pexNote=' Photos could not be fetched ('+(bad[0].reason&&bad[0].reason.message||'error')+'); check the Pexels key.';else if(got.some(x=>!x))pexNote=' Some photos were not found and use labeled tiles.'}
+      ph=[];for(let i=0;i<7;i++){const f=i>=4&&$('d_p'+(i+1)).files&&$('d_p'+(i+1)).files[0];
+        if(f)ph.push(await coverJpeg(f));else if(got[i])ph.push(got[i]);else ph.push(i<4?null:await tile(i,c.journey.cols[i].day,v))}
+    }
     const tpl=await (await fetch('Latis_Vertical_Template.pptx')).arrayBuffer();
     const bytes=await LatisPatch.buildDeck(JSZip,tpl,c,{journeys:ids.slice(0,8).map(i=>BYID[i])},ph);
     download('Latis Vertical Deck '+safe(v)+'.pptx',new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'}));
-    msg('Done. The '+v+' deck was downloaded. Spot-check text fit on slides 7 to 13.','ok');
+    msg('Done. The '+v+' deck was downloaded.'+pexNote+' Spot-check text fit and photos on slides 7 to 13.','ok');
   }catch(e){msg(e.message||String(e),'err')}
   $('d_gen').disabled=false;
 };
