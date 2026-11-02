@@ -549,11 +549,12 @@ function formEff(){return effortOf($('f_seg').value,$('f_ov').checked,$('f_cq').
 function formSucc(){return Math.max(1,Math.min(10,Math.round(+$('f_succ').value||5)))}
 function preview(){
   const o=formOpp(),e=formEff(),s=formSucc(),sg=formSig();$('sigOut').textContent=sg.score+' / 10'+(sg.blocked?' (not doable)':'');$('sigDet').textContent=sg.note;
+  const on=!!$('f_name').value.trim();['oppOut','effOut','succOut','sigOut'].forEach(i=>$(i).style.display=on?'':'none');$('preview').style.display=on?'':'none';$('sigDet').style.display=on?'':'none';
   $('oppOut').textContent=o+' / 10';$('effOut').textContent=e+' / 5';$('succOut').textContent=s+' / 10';
   const c=calc({due:$('f_due').value,opp10:o,succ:s,eff:e,sig:sg.score});
   $('preview').innerHTML='Due score <b>'+c.ds+'</b> &middot; Value <b>'+c.value.toFixed(1)+'</b> &middot; Priority <b>'+c.pri.toFixed(1)+'</b> &middot; <span class="q '+c.q+'">'+QN[c.q]+'</span>';
 }
-['f_due','f_mtg','f_first','f_prev','f_out','f_size','f_reuse','f_seg','f_ov','f_cq','f_wb','f_succ','f_vert','f_doms'].forEach(id=>$(id).addEventListener('input',preview));
+['f_name','f_due','f_mtg','f_first','f_prev','f_out','f_size','f_reuse','f_seg','f_ov','f_cq','f_wb','f_succ','f_vert','f_doms'].forEach(id=>$(id).addEventListener('input',preview));
 function setForm(it){
   $('f_name').value=it.name||'';$('f_due').value=it.due||'';$('f_req').value=it.req||'';$('f_desc').value=it.desc!=null?it.desc:(it.notes||'');
   $('f_mtg').value=it.mtg||1;$('f_first').checked=!!it.first;$('f_prev').checked=!!it.prev;$('f_out').value=it.out!=null?it.out:1;$('f_size').value=it.size!=null?it.size:1;$('f_reuse').checked=!!it.reuse;
