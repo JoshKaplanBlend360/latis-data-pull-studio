@@ -236,12 +236,28 @@ table.qt tbody tr{cursor:default}
       </div>
       <div>
         <label>Client name (for the file name)</label><input id="w_client" placeholder="e.g. Fetch">
-        <label style="margin-top:10px">Key domains (brand, competitors, enthusiast sites)</label><textarea id="w_doms" rows="2" placeholder="Filled from the intake form; edit as needed. e.g. toyota.com, honda.com"></textarea>
-        <div class="hint">These feed the Signal check on the Prioritize page.</div>
+        <label style="margin-top:10px">Competitor sites (filled from the intake form)</label><textarea id="w_cd" rows="2" placeholder="e.g. mcdonalds.com, wendys.com"></textarea>
+        <label style="margin-top:10px">Enthusiast sites (filled from the intake form)</label><textarea id="w_ed" rows="2" placeholder="e.g. slickdeals.net, eater.com"></textarea>
+        <div class="hint" id="w_domMsg">Site names in the form are converted to domains. Edit as needed; these feed the Signal check on the Prioritize page.</div>
         <label style="margin-top:10px"><input type="checkbox" id="w_comb" checked style="width:auto;margin-right:6px">Include a combined write-up</label>
         <div class="bar"><button class="btn" id="w_gen">Draft write-ups</button><span class="note" id="w_status"></span></div>
         <div class="msg err" id="w_err"></div>
       </div>
+    </div>
+  </div>
+  <div class="card" id="w_reqcard">
+    <h2>Request details <span class="note">filled from the intake form; edit as needed</span></h2>
+    <div class="frm">
+      <div><label>Sales planner (requestor)</label><input id="w_planner"></div>
+      <div><label>Sales manager</label><input id="w_mgr"></div>
+      <div class="w2"><label>Campaign / title</label><input id="w_camp"></div>
+      <div><label>Flight dates</label><input id="w_flight"></div>
+      <div><label>Geo / footprint</label><input id="w_geo"></div>
+      <div><label>Due date</label><input id="w_due" type="date"><div class="hint" id="w_dueNote"></div></div>
+      <div><label>Brand domain</label><input id="w_brand" placeholder="e.g. bk.com"></div>
+      <div><label>Priority</label><select id="w_prio"><option value="">Not set</option><option>Urgent</option><option>High</option><option>Standard</option><option>Low</option></select></div>
+      <div><label>Meeting type</label><select id="w_stage"><option value="">Not set</option><option>Initial Meeting</option><option>Proposal</option></select></div>
+      <div class="chk w2"><label><input type="checkbox" id="w_uc_c">Conquest</label><label><input type="checkbox" id="w_uc_w">Win-Back</label><label><input type="checkbox" id="w_uc_f">Find Customers</label><label><input type="checkbox" id="w_uc_x">Custom</label></div>
     </div>
   </div>
   <div class="card" id="w_out" style="display:none">
@@ -600,13 +616,18 @@ function wuOf(it){const w=it.wuId&&store.writeups.find(x=>x.id===it.wuId);return
 function fillWu(){const sel=$('f_wu'),cur=sel.value;const l=store.writeups.slice().sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0));
   sel.innerHTML='<option value="">'+(l.length?'Pick a write-up...':'No write-ups yet. Create one on the Write-ups page first.')+'</option>'+l.map(w=>'<option value="'+w.id+'">'+esc(w.client)+' ('+(w.items||[]).length+' write-ups)</option>').join('');
   sel.value=cur;if(sel.value!==cur)sel.value='';syncWu()}
-function syncWu(){const w=store.writeups.find(x=>x.id===$('f_wu').value);if(w){$('f_desc').value=wuText(w);$('f_doms').value=w.doms||'';if(!$('f_name').value.trim()){$('f_name').value=w.client||''}}else if(!editId||!$('f_wu').value){$('f_desc').value='';$('f_doms').value=''}if(typeof preview==='function')preview()}
+function applyWuFields(w){const q=w.req||{},set=(id,v)=>{if(v)$(id).value=v};
+  set('f_req',q.planner);set('f_due',q.due);const n=(w.items||[]).filter(i=>i.kind!=='combined').length;$('f_seg').value=Math.max(1,n||[q.c,q.w,q.f,q.x].filter(Boolean).length||1);
+  $('f_cq').checked=!!q.c;$('f_wb').checked=!!q.w;if(q.overlay)$('f_ov').checked=true;
+  const bits=[];if(q.planner)bits.push('requested by '+q.planner);if(q.due)bits.push('due '+q.due);bits.push($('f_seg').value+' segment'+($('f_seg').value==='1'?'':'s'));if(q.c)bits.push('conquest rule');if(q.w)bits.push('win-back rule');if(q.overlay)bits.push('overlay');
+  $('wuNote').textContent=($('wuNote').textContent?$('wuNote').textContent+' ':'')+'Also filled: '+bits.join(', ')+'.'}
+function syncWu(apply){const w=store.writeups.find(x=>x.id===$('f_wu').value);if(w){$('f_desc').value=wuText(w);$('f_doms').value=w.doms||'';if(!$('f_name').value.trim()){$('f_name').value=w.client||''}if(apply===true)applyWuFields(w)}else if(!editId||!$('f_wu').value){$('f_desc').value='';$('f_doms').value=''}if(typeof preview==='function')preview()}
 let autoWu=false;
-$('f_wu').addEventListener('change',()=>{autoWu=false;syncWu()});
+$('f_wu').addEventListener('change',()=>{autoWu=false;$('wuNote').textContent='';syncWu(true)});
 function autoLink(){const q=$('f_name').value.trim().toLowerCase();if(q.length<2){if(autoWu){$('f_wu').value='';autoWu=false;syncWu()}$('wuNote').textContent='';return}
   if($('f_wu').value&&!autoWu){return}
   const ms=store.writeups.filter(w=>{const c=String(w.client||'').toLowerCase();return c&&(c.indexOf(q)>=0||q.indexOf(c)>=0)}).sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0));
-  if(ms.length){$('f_wu').value=ms[0].id;autoWu=true;syncWu();$('wuNote').textContent='Found the write-up for '+ms[0].client+' and pulled in its embeddings description and key domains.'}
+  if(ms.length){$('f_wu').value=ms[0].id;autoWu=true;$('wuNote').textContent='Found the write-up for '+ms[0].client+' and pulled in its embeddings description and key domains.';syncWu(true)}
   else{if(autoWu){$('f_wu').value='';autoWu=false;syncWu()}$('wuNote').textContent='No write-up found for "'+$('f_name').value.trim()+'". Create one on the Write-ups page first.'}}
 $('f_name').addEventListener('input',autoLink);
 function calc(it){
@@ -755,9 +776,65 @@ const safe=s=>String(s||'').replace(/[\\/:*?"<>|]/g,'').trim();
 let W={client:'',items:[],id:null,geo:'',doms:''};
 const DOMRE=/\b(?:[a-z0-9-]+\.)+(?:com|net|org|io|tv|co|us|edu|gov|app|ai|me|ly|fm|gg)\b/gi;
 function extractDoms(t){const s=new Set();(String(t||'').match(DOMRE)||[]).forEach(d=>{d=d.toLowerCase().replace(/^www\./,'');if(!/^(gmail|outlook|yahoo|hotmail|charter|spectrum|blend360|spectrumreach|latis)\./.test(d)&&!/\.(docx|xlsx)$/.test(d))s.add(d)});return [...s].join(', ')}
+
+const FIELD_STOP=/^(?:[A-D]\s*[—-]\s|[A-Z][A-Za-z\/&() ]{2,40}:\s)/;
+function formList(text,label,instr){const lines=String(text||'').split('\n'),out=[];let on=false;
+  for(let i=0;i<lines.length;i++){let l=lines[i].trim();
+    if(!on){const m=l.match(new RegExp('^'+label+'\\s*:\\s*(.*)$','i'));if(m){on=true;l=m[1]}else continue}
+    else if(FIELD_STOP.test(l))break;
+    l=l.replace(instr,'').replace(/_{2,}/g,'').trim();if(l)out.push(l)}
+  return out.join(', ').split(/[,;•\n]| and /i).map(s=>s.replace(/\(.*?\)/g,'').replace(/^(?:e\.g\.|e\.g|such as|incl(?:uding)?)\s*/i,'').trim()).filter(s=>s.length>1&&s.length<45&&!/^(n\/a|none|tbd|na)$/i.test(s)&&s.indexOf(':')<0)}
+function resolveSite(n){n=String(n).trim();const dm=n.toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+  if(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(dm))return {d:dm,ok:true};
+  const slug=n.toLowerCase().replace(/[^a-z0-9]/g,'');if(!slug)return null;
+  let best=null,br=-1;Object.keys(SIG.d).forEach(k=>{const lab=k.split('.')[0];if(lab===slug){const e=SIG.d[k],r=Math.max(e[1]||0,e[4]||0)+(/\.com$/.test(k)?0.001:0);if(r>br){br=r;best=k}}});
+  return best?{d:best,ok:true}:{d:slug+'.com',ok:false}}
+
+function proseBrands(text){const t=String(text||'');let i=t.search(/Describe the audience/i);if(i<0)i=0;let j=t.search(/\nC\s*[—-]\s/);if(j<0)j=t.length;
+  const sec=t.slice(i,j).split('\n').filter(l=>l.length>120).join(' ');const out=[],seen=new Set();
+  sec.split(/[,;:()]|\band\b|\bor\b|\bsuch as\b|\bincluding\b|\bacross\b/i).forEach(p=>{p=p.trim().replace(/^(?:the|of|from|on|with|like|as|to|by)\s+/i,'').replace(/[.]+$/,'');
+    if(!/^[A-Z0-9][\w'’.&-]*(\s+[A-Z0-9][\w'’.&-]*){0,2}$/.test(p)||p.length<4)return;
+    const slug=p.toLowerCase().replace(/[^a-z0-9]/g,'');let best=null,br=-1;Object.keys(SIG.d).forEach(k=>{if(k.split('.')[0]===slug){const e=SIG.d[k],r=Math.max(e[1]||0,e[4]||0);if(r>br){br=r;best=k}}});
+    if(best&&!seen.has(best)){seen.add(best);out.push(best)}});return out}
+function fillDomains(text){const comp=formList(text,'Competitor Sites',/^List sites you want to conquest against:?/i),enth=formList(text,'Enthusiast Sites',/^List category\/interest sites relevant to this audience:?/i);
+  const map=l=>{const seen=new Set(),dom=[],guess=[];l.forEach(n=>{const r=resolveSite(n);if(r&&!seen.has(r.d)){seen.add(r.d);dom.push(r.d);if(!r.ok)guess.push(r.d)}});return {dom,guess}};
+  const c=map(comp),e=map(enth),ex=extractDoms(text).split(', ').filter(Boolean).concat(proseBrands(text));
+  if(!$('w_cd').value.trim())$('w_cd').value=c.dom.join(', ');if(!$('w_ed').value.trim())$('w_ed').value=e.dom.join(', ');
+  ex.forEach(d=>{if($('w_cd').value.indexOf(d)<0&&$('w_ed').value.indexOf(d)<0)$('w_ed').value=($('w_ed').value?$('w_ed').value+', ':'')+d});
+  const g=c.guess.concat(e.guess);
+  $('w_domMsg').textContent=(comp.length+enth.length?'Found '+comp.length+' competitor and '+enth.length+' enthusiast site names in the form. ':'No competitor or enthusiast sites found in the form fields. ')+(g.length?'Domains guessed from the name, please verify: '+g.join(', ')+'. ':'')+'Brands named in the audience description are added when they match our data. Drafting write-ups adds more.'}
+function allDoms(){return [...new Set(($('w_cd').value+','+$('w_ed').value).split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(s=>s.indexOf('.')>0))].join(', ')}
+function mergeList(id,arr){const have=($(id).value||'').split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(Boolean);(arr||[]).forEach(d=>{d=String(d).toLowerCase().trim().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];if(d.indexOf('.')>0&&have.indexOf(d)<0)have.push(d)});$(id).value=have.join(', ')}
 $('w_file').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('w_fileMsg').textContent='Reading '+f.name+'...';
-  try{const t=await docxText(f);$('w_text').value=t;$('w_doms').value=extractDoms(t);$('w_fileMsg').textContent='Read '+t.split('\n').length+' lines from '+f.name;if(!$('w_client').value){const m=t.match(/(?:Client|Brand|Advertiser)[^\n:]*[:\t]\s*([^\n]+)/i);if(m)$('w_client').value=m[1].trim().slice(0,60)}}
+  try{const t=await docxText(f);$('w_text').value=t;fillRequest(t);fillDomains(t);$('w_fileMsg').textContent='Read '+t.split('\n').length+' lines from '+f.name;if(!$('w_client').value){const m=t.match(/(?:Client|Brand|Advertiser)[^\n:]*[:\t]\s*([^\n]+)/i);if(m)$('w_client').value=m[1].trim().slice(0,60)}}
   catch(err){$('w_fileMsg').textContent='Could not read that file. Is it a .docx?'}};
+
+/* ---------- intake request details ---------- */
+const CHK=/[☒☑✔✓■]/;
+function fld(text,label){const m=String(text).match(new RegExp('^\\s*'+label+'\\s*:\\s*(.+)$','im'));return m?m[1].trim():''}
+function checked(line){const out=[];String(line||'').split(/\s{2,}|(?=[☒☐☑■□])/).forEach(p=>{p=p.trim();if(CHK.test(p))out.push(p.replace(/[☒☑✔✓■]/,'').trim())});return out}
+function parseDue(s,prio){s=String(s||'').trim();const t=new Date();let d=null,note='';
+  let m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);if(m){let y=+m[3];if(y<100)y+=2000;d=new Date(y,+m[1]-1,+m[2])}
+  else{m=s.match(/([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:,?\s*(\d{4}))?/);if(m){const mo=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m[1].slice(0,3).toLowerCase());if(mo>=0)d=new Date(m[3]?+m[3]:t.getFullYear(),mo,+m[2])}}
+  if(!d&&/asap|urgent|today/i.test(s)){d=new Date(t.getFullYear(),t.getMonth(),t.getDate());note='ASAP, set to today'}
+  if(!d&&prio){const add={Urgent:2,High:7,Standard:14,Low:30}[prio];if(add!=null){d=new Date(t.getFullYear(),t.getMonth(),t.getDate()+add);note='Estimated from '+prio+' priority'}}
+  if(!d||isNaN(d))return {v:'',note:''};const p=n=>String(n).padStart(2,'0');return {v:d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()),note}}
+function parseIntake(text){const t=String(text||'');
+  const prio=(checked(fld(t,'Priority\\s*[—-]\\s*check one')).map(x=>x.split(/[\s(]/)[0])[0])||'';
+  const stage=(()=>{const l=t.split('\n').find(x=>/initial meeting/i.test(x)&&/proposal/i.test(x));const c=checked(l);return c.find(x=>/initial/i.test(x))?'Initial Meeting':c.find(x=>/proposal/i.test(x))?'Proposal':''})();
+  let uc=checked(fld(t,'Use Case\\s*[—-]\\s*check one'));
+  if(!uc.length){uc=t.split('\n').map(l=>l.trim().match(/^For\s+(Conquest|Win[- ]?Back|Find Customers|Custom)\s*$/i)).filter(Boolean).map(m=>m[1])}
+  const has=re=>uc.some(x=>re.test(x));
+  const clean=s=>{s=String(s||'').replace(/_+/g,' ').replace(/\s+/g,' ').trim();return /^(tbd|n\/a|na|none)$/i.test(s)?'':s};
+  return {planner:clean(fld(t,'SALES PLANNER[^:\\n]*')),mgr:clean(fld(t,'SALES MANAGER')),client:clean(fld(t,'CLIENT\\s*\\/\\s*ADVERTISER')),camp:clean(fld(t,'CAMPAIGN\\s*\\/\\s*TITLE')),flight:clean(fld(t,'FLIGHT DATES')),geo:clean(fld(t,'GEO\\s*\\/\\s*FOOTPRINT')),dueRaw:clean(fld(t,'DATE DUE')),brand:clean(fld(t,'BRAND DOMAIN')).toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0],prio,stage,
+    c:has(/conquest/i),w:has(/win/i),f:has(/find/i),x:has(/^custom$/i)}}
+function fillRequest(text){const r=parseIntake(text),set=(id,v)=>{if(v&&!$(id).value.trim())$(id).value=v};
+  set('w_client',r.client);set('w_planner',r.planner);set('w_mgr',r.mgr);set('w_camp',r.camp);set('w_flight',r.flight);set('w_geo',r.geo);set('w_brand',r.brand);
+  if(r.prio&&!$('w_prio').value)$('w_prio').value=r.prio;if(r.stage&&!$('w_stage').value)$('w_stage').value=r.stage;
+  if(!$('w_due').value){const d=parseDue(r.dueRaw,r.prio);if(d.v){$('w_due').value=d.v;$('w_dueNote').textContent=d.note}}
+  if(r.c)$('w_uc_c').checked=true;if(r.w)$('w_uc_w').checked=true;if(r.f)$('w_uc_f').checked=true;if(r.x)$('w_uc_x').checked=true}
+function reqObj(){return {planner:$('w_planner').value.trim(),mgr:$('w_mgr').value.trim(),camp:$('w_camp').value.trim(),flight:$('w_flight').value.trim(),geo:$('w_geo').value.trim(),due:$('w_due').value,brand:$('w_brand').value.trim(),prio:$('w_prio').value,stage:$('w_stage').value,c:$('w_uc_c').checked,w:$('w_uc_w').checked,f:$('w_uc_f').checked,x:$('w_uc_x').checked,overlay:/(\b\d{2}\s*[-–]\s*\d{2}\b|\bHHI\b|household income|\$\d+\s*K|\baged?\s*\d{2}|\b(?:male|female)s?\b)/i.test($('w_text').value+' '+W.items.map(i=>i.paragraph).join(' '))}}
+function setReq(q){q=q||{};$('w_planner').value=q.planner||'';$('w_mgr').value=q.mgr||'';$('w_camp').value=q.camp||'';$('w_flight').value=q.flight||'';$('w_geo').value=q.geo||'';$('w_due').value=q.due||'';$('w_brand').value=q.brand||'';$('w_prio').value=q.prio||'';$('w_stage').value=q.stage||'';$('w_uc_c').checked=!!q.c;$('w_uc_w').checked=!!q.w;$('w_uc_f').checked=!!q.f;$('w_uc_x').checked=!!q.x;$('w_dueNote').textContent=''}
 function renderWItems(){
   $('w_out').style.display=W.items.length?'':'none';
   $('w_items').innerHTML=W.items.map((it,i)=>'<div class="wi" data-i="'+i+'"><div class="tag">'+(it.kind==='combined'?'Combined':'Individual')+'</div>'+
@@ -773,18 +850,18 @@ $('w_gen').onclick=async()=>{
   if(text.length<20){$('w_err').textContent='Drop in an intake form or paste its text first.';return}
   $('w_gen').disabled=true;$('w_status').textContent='Drafting (about 30 seconds)...';
   try{const r=await ai('writeups',{intakeText:text,combined:$('w_comb').checked});
-    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||''};if(!$('w_doms').value.trim())$('w_doms').value=extractDoms(text+' '+(r.items||[]).map(i=>i.paragraph).join(' '));renderWItems();$('w_status').textContent=W.items.length+' write-ups drafted. Edit anything below.'}
+    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||''};if(!$('w_geo').value.trim()&&r.geo)$('w_geo').value=r.geo;if(!$('w_camp').value.trim()&&r.campaign)$('w_camp').value=r.campaign;fillDomains(text);mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);renderWItems();$('w_status').textContent=W.items.length+' write-ups drafted. Edit anything below.'}
   catch(e){$('w_err').textContent=e.message||String(e);$('w_status').textContent=''}
   $('w_gen').disabled=false;
 };
 $('w_dl').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';const b=await makeDocx(W.items,{title:c+' — Embeddings Write-Ups',sub:W.geo?'Geo: '+W.geo:''});download(safe(c)+' Data Pull.docx',b)};
-$('w_save').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';W.id=W.id||uid();const old=store.writeups.find(x=>x.id===W.id);await db.put('writeups',{id:W.id,client:c,items:W.items,geo:W.geo,doms:$('w_doms').value.trim(),by:who(),created:old?old.created:Date.now(),updated:Date.now()});$('w_status').textContent='Saved. It is now available on the Prioritize page.'};
+$('w_save').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';W.id=W.id||uid();const old=store.writeups.find(x=>x.id===W.id);await db.put('writeups',{id:W.id,client:c,items:W.items,geo:W.geo,req:reqObj(),doms:allDoms()+($('w_brand').value.trim()?', '+$('w_brand').value.trim().toLowerCase():''),cdoms:$('w_cd').value.trim(),edoms:$('w_ed').value.trim(),by:who(),created:old?old.created:Date.now(),updated:Date.now()});$('w_status').textContent='Saved. It is now available on the Prioritize page.'};
 function renderWSaved(){
   const l=store.writeups.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
   $('w_saved').innerHTML=l.length?l.map(w=>'<div class="saved"><div class="grow"><b>'+esc(w.client)+'</b> <span class="note">'+w.items.length+' write-ups &middot; '+esc(w.by||'')+' &middot; '+new Date(w.updated||w.created).toLocaleDateString()+'</span></div><button class="btn sec sm wopen" data-id="'+w.id+'">Open</button><button class="btn danger sm wrm" data-id="'+w.id+'">Delete</button></div>').join(''):'<div class="note">Nothing saved yet.</div>';
 }
 $('w_saved').addEventListener('click',async e=>{const id=e.target.dataset.id;if(!id)return;
-  if(e.target.classList.contains('wopen')){const w=store.writeups.find(x=>x.id===id);W={id:w.id,client:w.client,items:JSON.parse(JSON.stringify(w.items)),geo:w.geo||''};$('w_client').value=w.client;$('w_doms').value=w.doms||'';renderWItems();window.scrollTo({top:0,behavior:'smooth'})}
+  if(e.target.classList.contains('wopen')){const w=store.writeups.find(x=>x.id===id);W={id:w.id,client:w.client,items:JSON.parse(JSON.stringify(w.items)),geo:w.geo||''};$('w_client').value=w.client;setReq(w.req);$('w_cd').value=w.cdoms||'';$('w_ed').value=w.edoms||(w.cdoms?'':w.doms||'');renderWItems();window.scrollTo({top:0,behavior:'smooth'})}
   if(e.target.classList.contains('wrm')){if(e.target.dataset.arm==='1')await db.del('writeups',id);else{e.target.dataset.arm='1';e.target.textContent='Confirm?';setTimeout(()=>{e.target.dataset.arm='';e.target.textContent='Delete'},3000)}}});
 
 /* ---------- Decks ---------- */
