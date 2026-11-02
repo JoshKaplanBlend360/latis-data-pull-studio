@@ -835,15 +835,23 @@ function fillRequest(text){const r=parseIntake(text),set=(id,v)=>{if(v&&!$(id).v
   if(r.c)$('w_uc_c').checked=true;if(r.w)$('w_uc_w').checked=true;if(r.f)$('w_uc_f').checked=true;if(r.x)$('w_uc_x').checked=true}
 function reqObj(){return {planner:$('w_planner').value.trim(),mgr:$('w_mgr').value.trim(),camp:$('w_camp').value.trim(),flight:$('w_flight').value.trim(),geo:$('w_geo').value.trim(),due:$('w_due').value,brand:$('w_brand').value.trim(),prio:$('w_prio').value,stage:$('w_stage').value,c:$('w_uc_c').checked,w:$('w_uc_w').checked,f:$('w_uc_f').checked,x:$('w_uc_x').checked,overlay:/(\b\d{2}\s*[-–]\s*\d{2}\b|\bHHI\b|household income|\$\d+\s*K|\baged?\s*\d{2}|\b(?:male|female)s?\b)/i.test($('w_text').value+' '+W.items.map(i=>i.paragraph).join(' '))}}
 function setReq(q){q=q||{};$('w_planner').value=q.planner||'';$('w_mgr').value=q.mgr||'';$('w_camp').value=q.camp||'';$('w_flight').value=q.flight||'';$('w_geo').value=q.geo||'';$('w_due').value=q.due||'';$('w_brand').value=q.brand||'';$('w_prio').value=q.prio||'';$('w_stage').value=q.stage||'';$('w_uc_c').checked=!!q.c;$('w_uc_w').checked=!!q.w;$('w_uc_f').checked=!!q.f;$('w_uc_x').checked=!!q.x;$('w_dueNote').textContent=''}
+const UCT=['Conquesting','Win Back','Find Customers','Custom'];
+function guessUC(it){const t=((it.title||'')+' '+(it.audienceName||'')).toLowerCase(),p=(it.paragraph||'').toLowerCase();
+  if(/conquest/.test(t))return 'Conquesting';if(/win[- ]?back|churn|lapsed|loyal/.test(t))return 'Win Back';if(/find customers|new customer|acquisition|prospect/.test(t))return 'Find Customers';
+  if(/compet/.test(t))return 'Conquesting';if(it.kind==='combined')return '';
+  if(/compet.{0,60}(visit|shop|research)/.test(p))return 'Conquesting';if(/(previous|former|lapsed|returning|re-?engage)/.test(p))return 'Win Back';return 'Find Customers'}
+function syncUC(){const t=W.items.map(i=>i.ucType);if(t.indexOf('Conquesting')>=0)$('w_uc_c').checked=true;if(t.indexOf('Win Back')>=0)$('w_uc_w').checked=true;if(t.indexOf('Find Customers')>=0)$('w_uc_f').checked=true;if(t.indexOf('Custom')>=0)$('w_uc_x').checked=true}
 function renderWItems(){
+  W.items.forEach(it=>{if(it.ucType===undefined)it.ucType=guessUC(it)});syncUC();
   $('w_out').style.display=W.items.length?'':'none';
   $('w_items').innerHTML=W.items.map((it,i)=>'<div class="wi" data-i="'+i+'"><div class="tag">'+(it.kind==='combined'?'Combined':'Individual')+'</div>'+
+    '<div class="fld"><label>Use case type</label><select data-k="ucType"><option value="">Not set</option>'+UCT.map(u=>'<option'+(it.ucType===u?' selected':'')+'>'+u+'</option>').join('')+'</select></div>'+
     '<div class="row2"><div><label>Use case title</label><input data-k="title" value="'+esc(it.title)+'"></div><div><label>Category header</label><input data-k="category" value="'+esc(it.category)+'"></div></div>'+
     '<div class="fld"><label>Audience name</label><input data-k="audienceName" value="'+esc(it.audienceName)+'"></div>'+
     '<div class="fld"><label>Write-up</label><textarea data-k="paragraph" rows="5">'+esc(it.paragraph)+'</textarea></div>'+
     '<div class="bar"><button class="btn danger sm wdel" data-i="'+i+'">Remove</button></div></div>').join('');
 }
-$('w_items').addEventListener('input',e=>{const wi=e.target.closest('.wi');if(wi&&e.target.dataset.k)W.items[+wi.dataset.i][e.target.dataset.k]=e.target.value});
+$('w_items').addEventListener('input',e=>{const wi=e.target.closest('.wi');if(wi&&e.target.dataset.k)W.items[+wi.dataset.i][e.target.dataset.k]=e.target.value;if(e.target.dataset.k==='ucType')syncUC()});
 $('w_items').addEventListener('click',e=>{if(e.target.classList.contains('wdel')){W.items.splice(+e.target.dataset.i,1);renderWItems()}});
 $('w_gen').onclick=async()=>{
   const text=$('w_text').value.trim();$('w_err').textContent='';
@@ -921,7 +929,7 @@ $('d_gen').onclick=async()=>{
   $('d_gen').disabled=false;
 };
 
-window.LatisStudio={makeDocx,docxText,W:()=>W};
+window.LatisStudio={makeDocx,docxText,renderWItems,W:()=>W};
 preview();boot();
 
 })();
