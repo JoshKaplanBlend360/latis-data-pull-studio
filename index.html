@@ -159,8 +159,9 @@ table.qt tbody tr{cursor:default}
     </div>
 
         <div class="sec"><h3>Linked write-up</h3>
-      <div class="hint">The embeddings description and key domains come from the write-up. Edit them on the Write-ups page and they update here.</div>
+      <div class="hint">Type the client name above and the matching write-up is found automatically (or pick one here). The embeddings description and key domains come from it. Edit them on the Write-ups page and they update here.</div>
       <div class="frm"><div class="w2"><label>Write-up</label><select id="f_wu"></select></div></div>
+      <div class="note" id="wuNote"></div>
     </div>
 
     <div class="sec"><h3>Signal strength <span class="calc" id="sigOut"></span></h3>
@@ -585,7 +586,14 @@ function fillWu(){const sel=$('f_wu'),cur=sel.value;const l=store.writeups.slice
   sel.innerHTML='<option value="">'+(l.length?'Pick a write-up...':'No write-ups yet. Create one on the Write-ups page first.')+'</option>'+l.map(w=>'<option value="'+w.id+'">'+esc(w.client)+' ('+(w.items||[]).length+' write-ups)</option>').join('');
   sel.value=cur;if(sel.value!==cur)sel.value='';syncWu()}
 function syncWu(){const w=store.writeups.find(x=>x.id===$('f_wu').value);if(w){$('f_desc').value=wuText(w);$('f_doms').value=w.doms||'';if(!$('f_name').value.trim()){$('f_name').value=w.client||''}}else if(!editId||!$('f_wu').value){$('f_desc').value='';$('f_doms').value=''}if(typeof preview==='function')preview()}
-$('f_wu').addEventListener('change',syncWu);
+let autoWu=false;
+$('f_wu').addEventListener('change',()=>{autoWu=false;syncWu()});
+function autoLink(){const q=$('f_name').value.trim().toLowerCase();if(q.length<2){if(autoWu){$('f_wu').value='';autoWu=false;syncWu()}$('wuNote').textContent='';return}
+  if($('f_wu').value&&!autoWu){return}
+  const ms=store.writeups.filter(w=>{const c=String(w.client||'').toLowerCase();return c&&(c.indexOf(q)>=0||q.indexOf(c)>=0)}).sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0));
+  if(ms.length){$('f_wu').value=ms[0].id;autoWu=true;syncWu();$('wuNote').textContent='Found the write-up for '+ms[0].client+' and pulled in its embeddings description and key domains.'}
+  else{if(autoWu){$('f_wu').value='';autoWu=false;syncWu()}$('wuNote').textContent='No write-up found for "'+$('f_name').value.trim()+'". Create one on the Write-ups page first.'}}
+$('f_name').addEventListener('input',autoLink);
 function calc(it){
   const ds=dueScore(it.due);
   const opp=it.opp10!=null?it.opp10:(it.opp||3)*2;      // older entries were scored 1-5
@@ -648,7 +656,7 @@ function setForm(it){
   $('f_seg').value=it.seg||1;$('f_ov').checked=!!it.ov;$('f_cq').checked=!!it.cq;$('f_wb').checked=!!it.wb;
   $('f_succ').value=it.succ!=null?it.succ:(it.imp?it.imp*2:5);$('f_why').value=it.why||'';$('f_vert').value=it.vert||'';$('f_wu').value=it.wuId||'';if($('f_wu').value){syncWu()}else{$('f_doms').value=it.doms||'';$('f_desc').value=it.desc!=null?it.desc:(it.notes||'')}$('f_status').value=it.status||'Open';$('aiMsg').textContent='';preview();
 }
-function resetForm(){editId=null;setForm({});$('saveBtn').textContent='Add to queue';$('cancelBtn').style.display='none';$('formTitle').textContent='Log a data pull opportunity'}
+function resetForm(){editId=null;autoWu=false;$('wuNote').textContent='';setForm({});$('saveBtn').textContent='Add to queue';$('cancelBtn').style.display='none';$('formTitle').textContent='Log a data pull opportunity'}
 $('saveBtn').onclick=async()=>{
   if(!$('f_wu').value&&!editId){alert('Pick a write-up first. Create one on the Write-ups page if you have not.');$('f_wu').focus();return}
   const name=$('f_name').value.trim();if(!name){$('f_name').focus();$('f_name').style.outline='2px solid #d33';return}$('f_name').style.outline='';
