@@ -159,7 +159,7 @@ table.qt tbody tr{cursor:default}
     </div>
 
         <div class="sec"><h3>Linked write-up</h3>
-      <div class="hint">Type the client name above and the matching write-up is found automatically (or pick one here). The embeddings description and key domains come from it. Edit them on the Write-ups page and they update here.</div>
+      <div class="hint">Type the client name above and the matching write-up is found automatically (or pick one here). The embeddings description and key domains come from it. If there is no write-up, fill them in yourself below.</div>
       <div class="frm"><div class="w2"><label>Write-up</label><select id="f_wu"></select></div></div>
       <div class="note" id="wuNote"></div>
     </div>
@@ -168,13 +168,13 @@ table.qt tbody tr{cursor:default}
       <div class="hint">Checked against the Latis domain mapping file and data dictionary: can we build this audience, and is the signal strong?</div>
       <div class="frm">
         <div><label>Latis vertical</label><select id="f_vert"></select></div>
-        <div class="w2"><label>Key domains (from the write-up)</label><textarea id="f_doms" rows="2" readonly placeholder="Pick a write-up above"></textarea></div>
+        <div class="w2"><label>Key domains</label><textarea id="f_doms" rows="2" placeholder="Fills from the write-up when found. Otherwise type the domains."></textarea></div>
       </div>
       <div class="note" id="sigDet"></div>
     </div>
 
-    <div class="sec"><h3>Embeddings description (from the write-up)</h3>
-      <textarea id="f_desc" rows="5" readonly placeholder="Pick a write-up above. Its embeddings description appears here."></textarea>
+    <div class="sec"><h3>Embeddings description</h3>
+      <textarea id="f_desc" rows="5" placeholder="Fills from the write-up when found. Otherwise type or paste the description."></textarea>
     </div>
 
     <div class="sec"><h3>Campaign success likelihood <span class="calc" id="succOut"></span></h3>
@@ -612,7 +612,7 @@ function formSig(){return signalOf($('f_vert').value,$('f_doms').value)}
 
 /* ---------- write-up link ---------- */
 function wuText(w){return (w.items||[]).map(i=>(i.audienceName?i.audienceName+': ':'')+i.paragraph).join('\n\n')}
-function wuOf(it){const w=it.wuId&&store.writeups.find(x=>x.id===it.wuId);return w?{desc:wuText(w),doms:w.doms||'',client:w.client,live:true}:{desc:it.desc||it.notes||'',doms:it.doms||'',live:false}}
+function wuOf(it){const w=!it.manual&&it.wuId&&store.writeups.find(x=>x.id===it.wuId);return w?{desc:wuText(w),doms:w.doms||'',client:w.client,live:true}:{desc:it.desc||it.notes||'',doms:it.doms||'',live:false}}
 function fillWu(){const sel=$('f_wu'),cur=sel.value;const l=store.writeups.slice().sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0));
   sel.innerHTML='<option value="">'+(l.length?'Pick a write-up...':'No write-ups yet. Create one on the Write-ups page first.')+'</option>'+l.map(w=>'<option value="'+w.id+'">'+esc(w.client)+' ('+(w.items||[]).length+' write-ups)</option>').join('');
   sel.value=cur;if(sel.value!==cur)sel.value='';syncWu()}
@@ -621,14 +621,15 @@ function applyWuFields(w){const q=w.req||{},set=(id,v)=>{if(v)$(id).value=v};
   $('f_cq').checked=!!q.c;$('f_wb').checked=!!q.w;if(q.overlay)$('f_ov').checked=true;
   const bits=[];if(q.planner)bits.push('requested by '+q.planner);if(q.due)bits.push('due '+q.due);bits.push($('f_seg').value+' segment'+($('f_seg').value==='1'?'':'s'));if(q.c)bits.push('conquest rule');if(q.w)bits.push('win-back rule');if(q.overlay)bits.push('overlay');
   $('wuNote').textContent=($('wuNote').textContent?$('wuNote').textContent+' ':'')+'Also filled: '+bits.join(', ')+'.'}
-function syncWu(apply){const w=store.writeups.find(x=>x.id===$('f_wu').value);if(w){$('f_desc').value=wuText(w);$('f_doms').value=w.doms||'';if(!$('f_name').value.trim()){$('f_name').value=w.client||''}if(apply===true)applyWuFields(w)}else if(!editId||!$('f_wu').value){$('f_desc').value='';$('f_doms').value=''}if(typeof preview==='function')preview()}
+let manualWu=false;['f_desc','f_doms'].forEach(id=>$(id).addEventListener('input',()=>{manualWu=true}));
+function syncWu(apply){const w=store.writeups.find(x=>x.id===$('f_wu').value);if(w&&!(manualWu&&apply!==true)){manualWu=false;$('f_desc').value=wuText(w);$('f_doms').value=w.doms||'';if(!$('f_name').value.trim()){$('f_name').value=w.client||''}if(apply===true)applyWuFields(w)}else if(!w&&(!editId||!$('f_wu').value)&&!manualWu){$('f_desc').value='';$('f_doms').value=''}if(typeof preview==='function')preview()}
 let autoWu=false;
 $('f_wu').addEventListener('change',()=>{autoWu=false;$('wuNote').textContent='';syncWu(true)});
 function autoLink(){const q=$('f_name').value.trim().toLowerCase();if(q.length<2){if(autoWu){$('f_wu').value='';autoWu=false;syncWu()}$('wuNote').textContent='';return}
   if($('f_wu').value&&!autoWu){return}
   const ms=store.writeups.filter(w=>{const c=String(w.client||'').toLowerCase();return c&&(c.indexOf(q)>=0||q.indexOf(c)>=0)}).sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0));
   if(ms.length){$('f_wu').value=ms[0].id;autoWu=true;$('wuNote').textContent='Found the write-up for '+ms[0].client+' and pulled in its embeddings description and key domains.';syncWu(true)}
-  else{if(autoWu){$('f_wu').value='';autoWu=false;syncWu()}$('wuNote').textContent='No write-up found for "'+$('f_name').value.trim()+'". Create one on the Write-ups page first.'}}
+  else{if(autoWu){$('f_wu').value='';autoWu=false;syncWu()}$('wuNote').textContent='No write-up found for "'+$('f_name').value.trim()+'". Fill in the description and key domains below yourself.'}}
 $('f_name').addEventListener('input',autoLink);
 function calc(it){
   const ds=dueScore(it.due);
@@ -690,13 +691,12 @@ function setForm(it){
   $('f_name').value=it.name||'';$('f_due').value=it.due||'';$('f_req').value=it.req||'';$('f_desc').value=it.desc!=null?it.desc:(it.notes||'');
   $('f_mtg').value=it.mtg||1;$('f_first').checked=!!it.first;$('f_prev').checked=!!it.prev;$('f_out').value=it.out!=null?it.out:1;$('f_size').value=it.size!=null?it.size:1;$('f_reuse').checked=!!it.reuse;
   $('f_seg').value=it.seg||1;$('f_ov').checked=!!it.ov;$('f_cq').checked=!!it.cq;$('f_wb').checked=!!it.wb;
-  $('f_succ').value=it.succ!=null?it.succ:(it.imp?it.imp*2:5);$('f_why').value=it.why||'';$('f_vert').value=it.vert||'';$('f_wu').value=it.wuId||'';if($('f_wu').value){syncWu()}else{$('f_doms').value=it.doms||'';$('f_desc').value=it.desc!=null?it.desc:(it.notes||'')}$('f_status').value=it.status||'Open';$('aiMsg').textContent='';preview();
+  $('f_succ').value=it.succ!=null?it.succ:(it.imp?it.imp*2:5);$('f_why').value=it.why||'';$('f_vert').value=it.vert||'';$('f_wu').value=it.wuId||'';manualWu=!!it.manual&&!!it.wuId;if($('f_wu').value&&!it.manual){syncWu()}else{$('f_doms').value=it.doms||'';$('f_desc').value=it.desc!=null?it.desc:(it.notes||'')}$('f_status').value=it.status||'Open';$('aiMsg').textContent='';preview();
 }
 function resetForm(){editId=null;autoWu=false;$('wuNote').textContent='';setForm({});$('saveBtn').textContent='Add to queue';$('cancelBtn').style.display='none';$('formTitle').textContent='Log a data pull opportunity'}
 $('saveBtn').onclick=async()=>{
-  if(!$('f_wu').value&&!editId){alert('Pick a write-up first. Create one on the Write-ups page if you have not.');$('f_wu').focus();return}
   const name=$('f_name').value.trim();if(!name){$('f_name').focus();$('f_name').style.outline='2px solid #d33';return}$('f_name').style.outline='';
-  const rec={name,due:$('f_due').value,req:$('f_req').value.trim(),desc:$('f_desc').value.trim(),mtg:+$('f_mtg').value||1,first:$('f_first').checked,prev:$('f_prev').checked,out:+$('f_out').value,size:+$('f_size').value,reuse:$('f_reuse').checked,opp10:formOpp(),seg:Math.max(1,+$('f_seg').value||1),ov:$('f_ov').checked,cq:$('f_cq').checked,wb:$('f_wb').checked,eff:formEff(),succ:formSucc(),wuId:$('f_wu').value,vert:$('f_vert').value,doms:$('f_doms').value.trim(),sig:formSig().score,sigNote:formSig().note,why:$('f_why').value.trim(),status:$('f_status').value};
+  const rec={name,due:$('f_due').value,req:$('f_req').value.trim(),desc:$('f_desc').value.trim(),mtg:+$('f_mtg').value||1,first:$('f_first').checked,prev:$('f_prev').checked,out:+$('f_out').value,size:+$('f_size').value,reuse:$('f_reuse').checked,opp10:formOpp(),seg:Math.max(1,+$('f_seg').value||1),ov:$('f_ov').checked,cq:$('f_cq').checked,wb:$('f_wb').checked,eff:formEff(),succ:formSucc(),wuId:$('f_wu').value,manual:manualWu||!$('f_wu').value,vert:$('f_vert').value,doms:$('f_doms').value.trim(),sig:formSig().score,sigNote:formSig().note,why:$('f_why').value.trim(),status:$('f_status').value};
   let doc;if(editId){doc=Object.assign({},store.pulls.find(i=>i.id===editId),rec)}else{doc=Object.assign({id:uid(),created:Date.now(),by:who()},rec)}
   hlId=doc.id;resetForm();try{await db.put('pulls',doc)}catch(e){alert('Could not save: '+e.message)}
 };
@@ -806,12 +806,12 @@ function fillDomains(text){const comp=formList(text,'Competitor Sites',/^List si
 function allDoms(){return [...new Set(($('w_cd').value+','+$('w_ed').value).split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(s=>s.indexOf('.')>0))].join(', ')}
 function mergeList(id,arr){const have=($(id).value||'').split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(Boolean);(arr||[]).forEach(d=>{d=String(d).toLowerCase().trim().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];if(d.indexOf('.')>0&&have.indexOf(d)<0)have.push(d)});$(id).value=have.join(', ')}
 $('w_file').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('w_fileMsg').textContent='Reading '+f.name+'...';
-  try{const t=await docxText(f);$('w_text').value=t;fillRequest(t);fillDomains(t);$('w_fileMsg').textContent='Read '+t.split('\n').length+' lines from '+f.name;if(!$('w_client').value){const m=t.match(/(?:Client|Brand|Advertiser)[^\n:]*[:\t]\s*([^\n]+)/i);if(m)$('w_client').value=m[1].trim().slice(0,60)}}
+  try{const t=await docxText(f);$('w_text').value=t;fillRequest(t);fillDomains(t);$('w_fileMsg').textContent='Read '+t.split('\n').length+' lines from '+f.name;if(!$('w_client').value){const m=t.match(/(?:Client|Brand|Advertiser)[^\n:]*[:\t]\s*([^\n]+)/i);if(m)$('w_client').value=m[1].trim().slice(0,60)}if($('w_client').value.trim())await saveW(true)}
   catch(err){$('w_fileMsg').textContent='Could not read that file. Is it a .docx?'}};
 
 /* ---------- intake request details ---------- */
 const CHK=/[☒☑✔✓■]/;
-function fld(text,label){const m=String(text).match(new RegExp('^\\s*'+label+'\\s*:\\s*(.+)$','im'));return m?m[1].trim():''}
+function fld(text,label){const m=String(text).match(new RegExp('^\\s*'+label+'\\s*:[ \\t]*(.*)$','im'));return m?m[1].trim():''}
 function checked(line){const out=[];String(line||'').split(/\s{2,}|(?=[☒☐☑■□])/).forEach(p=>{p=p.trim();if(CHK.test(p))out.push(p.replace(/[☒☑✔✓■]/,'').trim())});return out}
 function parseDue(s,prio){s=String(s||'').trim();const t=new Date();let d=null,note='';
   let m=s.match(/(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?(?!\d)/);if(m&&+m[1]<=12&&+m[2]<=31){let y=m[3]?+m[3]:t.getFullYear();if(y<100)y+=2000;d=new Date(y,+m[1]-1,+m[2])}
@@ -826,7 +826,7 @@ function parseIntake(text){const t=String(text||'');
   if(!uc.length){uc=t.split('\n').map(l=>l.trim().match(/^For\s+(Conquest|Win[- ]?Back|Find Customers|Custom)\s*$/i)).filter(Boolean).map(m=>m[1])}
   const has=re=>uc.some(x=>re.test(x));
   const clean=s=>{s=String(s||'').replace(/_+/g,' ').replace(/\s+/g,' ').trim();return /^(tbd|n\/a|na|none)$/i.test(s)?'':s};
-  return {planner:clean(fld(t,'SALES PLANNER[^:\\n]*')),mgr:clean(fld(t,'SALES MANAGER')),client:clean(fld(t,'CLIENT\\s*\\/\\s*ADVERTISER')),camp:clean(fld(t,'CAMPAIGN\\s*\\/\\s*TITLE')),flight:clean(fld(t,'FLIGHT DATES')),geo:clean(fld(t,'GEO\\s*\\/\\s*FOOTPRINT')),dueRaw:clean(fld(t,'DATE DUE')),brand:clean(fld(t,'BRAND DOMAIN')).toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0],prio,stage,
+  return {planner:clean(fld(t,'SALES PLANNER[^:\\n]*')),mgr:clean(fld(t,'SALES MANAGER')),client:clean(fld(t,'CLIENT\\s*\\/\\s*ADVERTISER')),camp:clean(fld(t,'CAMPAIGN\\s*\\/\\s*TITLE')),flight:clean(fld(t,'FLIGHT DATES')),geo:clean(fld(t,'GEO\\s*\\/\\s*FOOTPRINT')),dueRaw:clean(fld(t,'DATE DUE')),brand:clean(fld(t,'BRAND DOMAIN')).toLowerCase().replace(/\s*[(—–].*$/,'').replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0],prio,stage,
     c:has(/conquest/i),w:has(/win/i),f:has(/find/i),x:has(/^custom$/i)}}
 function fillRequest(text){const r=parseIntake(text),set=(id,v)=>{if(v&&!$(id).value.trim())$(id).value=v};
   set('w_client',r.client);set('w_planner',r.planner);set('w_mgr',r.mgr);set('w_camp',r.camp);set('w_flight',r.flight);set('w_geo',r.geo);set('w_brand',r.brand);
@@ -858,12 +858,14 @@ $('w_gen').onclick=async()=>{
   if(text.length<20){$('w_err').textContent='Drop in an intake form or paste its text first.';return}
   $('w_gen').disabled=true;$('w_status').textContent='Drafting (about 30 seconds)...';
   try{const r=await ai('writeups',{intakeText:text,combined:$('w_comb').checked});
-    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||''};if(!$('w_geo').value.trim()&&r.geo)$('w_geo').value=r.geo;if(!$('w_camp').value.trim()&&r.campaign)$('w_camp').value=r.campaign;fillDomains(text);mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);{const have=($('w_cd').value+' '+$('w_ed').value).toLowerCase();const ex=extractDoms((r.items||[]).map(i=>i.paragraph).join(' ')).split(', ').filter(d=>d&&have.indexOf(d)<0);if(ex.length){mergeList('w_ed',ex);$('w_domMsg').textContent+=' Added '+ex.length+' domains named in the drafted write-ups to the enthusiast list.'}}renderWItems();$('w_status').textContent=W.items.length+' write-ups drafted. Edit anything below.'}
+    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||''};if(!$('w_geo').value.trim()&&r.geo)$('w_geo').value=r.geo;if(!$('w_camp').value.trim()&&r.campaign)$('w_camp').value=r.campaign;fillDomains(text);mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);{const have=($('w_cd').value+' '+$('w_ed').value).toLowerCase();const ex=extractDoms((r.items||[]).map(i=>i.paragraph).join(' ')).split(', ').filter(d=>d&&have.indexOf(d)<0);if(ex.length){mergeList('w_ed',ex);$('w_domMsg').textContent+=' Added '+ex.length+' domains named in the drafted write-ups to the enthusiast list.'}}renderWItems();await saveW(true);$('w_status').textContent=W.items.length+' write-ups drafted and saved. Edit anything below.'}
   catch(e){$('w_err').textContent=e.message||String(e);$('w_status').textContent=''}
   $('w_gen').disabled=false;
 };
 $('w_dl').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';const b=await makeDocx(W.items,{title:c+' — Embeddings Write-Ups',sub:W.geo?'Geo: '+W.geo:''});download(safe(c)+' Data Pull.docx',b)};
-$('w_save').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';W.id=W.id||uid();const old=store.writeups.find(x=>x.id===W.id);await db.put('writeups',{id:W.id,client:c,items:W.items,geo:W.geo,req:reqObj(),doms:allDoms()+($('w_brand').value.trim()?', '+$('w_brand').value.trim().toLowerCase():''),cdoms:$('w_cd').value.trim(),edoms:$('w_ed').value.trim(),by:who(),created:old?old.created:Date.now(),updated:Date.now()});$('w_status').textContent='Saved. It is now available on the Prioritize page.'};
+async function saveW(auto){const c=$('w_client').value.trim()||W.client||'Client';W.id=W.id||uid();const old=store.writeups.find(x=>x.id===W.id);await db.put('writeups',{id:W.id,client:c,items:W.items,geo:W.geo,req:reqObj(),doms:allDoms()+($('w_brand').value.trim()?', '+$('w_brand').value.trim().toLowerCase():''),cdoms:$('w_cd').value.trim(),edoms:$('w_ed').value.trim(),by:who(),created:old?old.created:Date.now(),updated:Date.now()});$('w_status').textContent=auto?'Intake read and saved automatically. The Prioritize page will find it when you type the client name.':'Saved. It is now available on the Prioritize page.'}
+$('w_save').onclick=()=>saveW(false);
+
 function renderWSaved(){
   const l=store.writeups.slice().sort((a,b)=>(b.updated||0)-(a.updated||0));
   $('w_saved').innerHTML=l.length?l.map(w=>'<div class="saved"><div class="grow"><b>'+esc(w.client)+'</b> <span class="note">'+w.items.length+' write-ups &middot; '+esc(w.by||'')+' &middot; '+new Date(w.updated||w.created).toLocaleDateString()+'</span></div><button class="btn sec sm wopen" data-id="'+w.id+'">Open</button><button class="btn danger sm wrm" data-id="'+w.id+'">Delete</button></div>').join(''):'<div class="note">Nothing saved yet.</div>';
@@ -931,6 +933,11 @@ $('d_gen').onclick=async()=>{
 
 window.LatisStudio={makeDocx,docxText,renderWItems,W:()=>W};
 preview();boot();
+
+/* autosave edits to a write-up that has already been saved */
+let wTimer=null;function wAuto(){if(!W.id||!store.writeups.find(x=>x.id===W.id))return;clearTimeout(wTimer);wTimer=setTimeout(()=>saveW(true),1200)}
+['w_client','w_cd','w_ed','w_planner','w_mgr','w_camp','w_flight','w_geo','w_due','w_brand','w_prio','w_stage','w_uc_c','w_uc_w','w_uc_f','w_uc_x'].forEach(id=>{const e=$(id);if(e){e.addEventListener('input',wAuto);e.addEventListener('change',wAuto)}});
+$('w_items').addEventListener('input',wAuto);
 
 })();
 </script>
