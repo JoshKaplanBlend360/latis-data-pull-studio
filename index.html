@@ -259,17 +259,87 @@ table.qt tbody tr{cursor:default}
 
 <div id="key">
   <div class="card">
-    <h2>Scoring key (1 = lowest, 5 = highest)</h2>
-    <div style="overflow-x:auto"><table class="keytbl">
-      <thead><tr><th>Criterion</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
-      <tbody>
-        <tr><td>Due date<br><span style="font-weight:normal">entered as a date, converted to a score</span></td><td>No deadline, or 31+ days out</td><td>15&ndash;30 days out</td><td>8&ndash;14 days out</td><td>4&ndash;7 days out</td><td>3 days or less, or overdue</td></tr>
-        <tr><td>Opportunity<br><span style="font-weight:normal">calculated, 1&ndash;10</span></td><td colspan="5">Points for: expected outcome (exploratory 0, small test 1, planned campaign 2, large or live flight 3, signs up for Latis 4); client size (small 0, mid 1, large 2); relationship (first meeting 0, 2&ndash;3 meetings 1, 4 or more 2); previous pulls done (+1); reusable across clients or verticals (+1). Score = total, minimum 1, maximum 10.</td></tr>
-        <tr><td>Campaign success<br><span style="font-weight:normal">1&ndash;10</span></td><td colspan="5">How likely the campaign is to succeed, judged from the embeddings description and from what is known about the company and its marketing (internet research). AI-scored on request, and you can override it.</td></tr>
-        <tr><td>Effort<br><span style="font-weight:normal">calculated, 5 = most effort</span></td><td colspan="5">Starts at 1. <b>+1</b> for 2&ndash;3 segments, <b>+2</b> for 4 or more. <b>+1</b> if an overlay is needed (Epsilon, Experian, etc.). <b>+1</b> for a conquest rule (exclude the brand's site). <b>+1</b> for a win-back rule (used to visit, then left). Capped at 5.</td></tr>
-      </tbody>
-    </table></div>
-    <p class="note"><b>Value</b> = average of the due-date score, Opportunity &divide; 2 and Campaign success &divide; 2 (3 or higher counts as high). <b>Priority</b> = (due-date + Opportunity &divide; 2 + Success &divide; 2) &divide; Effort. Effort of 3 or lower counts as low. Ties go to the higher due-date score.</p>
+    <h2>How a data pull gets its priority</h2>
+    <p>Every data pull is scored on five things: <b>how soon it is needed</b>, <b>how big the opportunity is</b>, <b>how likely the campaign is to succeed</b>, <b>whether our data can actually deliver it</b>, and <b>how much work it takes</b>. The first four add up to the pull's <b>value</b>. Dividing by effort gives its <b>priority</b>, so high-value, low-effort work rises to the top. You can still drag rows to override the order.</p>
+    <div class="note" style="margin:10px 0"><b>In one line:</b> Priority = (Due-date score + Opportunity &divide; 2 + Campaign success &divide; 2 + Signal &divide; 2) &divide; Effort. Value = the same top part &divide; 4.</div>
+  </div>
+
+  <div class="card">
+    <h2>1. Due date <span class="note">score 1&ndash;5, set by the deadline</span></h2>
+    <p><b>Why it matters:</b> the nearer the deadline, the more urgent the work. Overdue items score the maximum.</p>
+    <div style="overflow-x:auto"><table class="keytbl"><thead><tr><th>Time left</th><th>Score</th></tr></thead><tbody>
+      <tr><td>3 days or less, or overdue</td><td>5</td></tr><tr><td>4&ndash;7 days</td><td>4</td></tr><tr><td>8&ndash;14 days</td><td>3</td></tr><tr><td>15&ndash;30 days</td><td>2</td></tr><tr><td>31+ days, or no deadline</td><td>1</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Opportunity <span class="note">score 1&ndash;10, calculated from the form</span></h2>
+    <p><b>Why it matters:</b> how much business this pull could lead to. It adds points for five questions, with a minimum of 1 and a maximum of 10.</p>
+    <div style="overflow-x:auto"><table class="keytbl"><thead><tr><th>Question</th><th>Answer</th><th>Points</th></tr></thead><tbody>
+      <tr><td rowspan="5">What do we expect the client to do?</td><td>Exploratory only</td><td>0</td></tr>
+      <tr><td>Small test campaign</td><td>1</td></tr><tr><td>Planned campaign</td><td>2</td></tr><tr><td>Large or live flight</td><td>3</td></tr><tr><td>Signs up for Latis</td><td>4</td></tr>
+      <tr><td rowspan="3">How big is the client?</td><td>Small</td><td>0</td></tr><tr><td>Mid-size</td><td>1</td></tr><tr><td>Large</td><td>2</td></tr>
+      <tr><td rowspan="3">How strong is the relationship?</td><td>First meeting</td><td>0</td></tr><tr><td>2&ndash;3 meetings</td><td>1</td></tr><tr><td>4 or more meetings</td><td>2</td></tr>
+      <tr><td>Have we done pulls for them before?</td><td>Yes</td><td>+1</td></tr>
+      <tr><td>Can the work be reused for other clients or verticals?</td><td>Yes</td><td>+1</td></tr>
+    </tbody></table></div>
+    <p class="note">Example: a large client (2) with 4+ meetings (2) who is expected to sign up for Latis (4), where we have done pulls before (1) and the work is reusable (1) scores 10.</p>
+  </div>
+
+  <div class="card">
+    <h2>3. Campaign success <span class="note">score 1&ndash;10, AI-scored or set by you</span></h2>
+    <p><b>Why it matters:</b> a big opportunity is only worth chasing if the campaign is likely to work. This score answers: <i>if we run it, will it perform?</i></p>
+    <p>Pressing <b>Score with AI</b> sends the embeddings description to Claude. Claude researches the company on the web (what it sells, who it markets to, how and where it advertises, how big its marketing is) and judges how well the audience fits. It returns a score and a written reason. We also give it the Signal check below, so it knows what our data can support. You can change the score and the reason at any time.</p>
+    <div style="overflow-x:auto"><table class="keytbl"><thead><tr><th>Score</th><th>Meaning</th></tr></thead><tbody>
+      <tr><td>8&ndash;10</td><td>Strong fit. Clear audience, sophisticated advertiser, good fit with TV and streaming.</td></tr>
+      <tr><td>5&ndash;7</td><td>Reasonable fit with some open questions.</td></tr>
+      <tr><td>1&ndash;4</td><td>Weak fit: unclear audience, small or inactive marketer, or poor match to the data.</td></tr>
+    </tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>4. Signal strength <span class="note">score 1&ndash;10, calculated from our data</span></h2>
+    <p><b>Why it matters:</b> it tells us whether we can actually build this audience, and how strong the data behind it is. It is checked against two internal files: the <b>Domain Mapping File</b> (about 8,600 websites, each with a category, intent level and household reach) and the <b>Latis Data Dictionary</b> (the 25 Latis verticals and about 8,350 destinations with reach). Enter a vertical and the key domains (the brand, its competitors, enthusiast sites).</p>
+    <div style="overflow-x:auto"><table class="keytbl"><thead><tr><th>Check</th><th>What we look at</th><th>Points</th></tr></thead><tbody>
+      <tr><td>Starting point</td><td>Every pull starts here</td><td>1</td></tr>
+      <tr><td>Vertical quality</td><td>Share of that vertical's websites that carry usable signal. 80% or more: <b>3</b>. 40&ndash;79%: <b>2</b>. Under 40%: <b>1</b> (mostly infrastructure or broad sites). Partly listed verticals max out at 2.</td><td>1&ndash;3</td></tr>
+      <tr><td>Domain coverage</td><td>How many of your domains we actually have. 80% or more: <b>3</b>. 50&ndash;79%: <b>2</b>. Some: <b>1</b>. None: <b>0</b></td><td>0&ndash;3</td></tr>
+      <tr><td>Reach</td><td>Typical share of households that visit those domains. 5% or more: <b>2</b>. 1&ndash;5%: <b>1</b>. Under 1%: <b>0</b></td><td>0&ndash;2</td></tr>
+      <tr><td>Intent</td><td>At least half the domains are marked high intent</td><td>+1</td></tr>
+    </tbody></table></div>
+    <p><b>Hard limits:</b></p>
+    <ul>
+      <li>Excluded verticals (for example Healthcare and Adult Content, or sensitive and gambling classes) score <b>1 and are marked "not doable"</b>, because Latis does not use that signal.</li>
+      <li>If any domain falls in an excluded class, the score is capped at <b>3</b>.</li>
+      <li>If no domains are entered, the score is capped at <b>5</b>, since we cannot confirm coverage.</li>
+    </ul>
+    <p class="note">Example: Automotive, with Toyota, Honda and Edmunds all in our data, about 10% typical household reach and all high intent, scores 10. A Technology pull with mostly infrastructure sites scores around 6.</p>
+  </div>
+
+  <div class="card">
+    <h2>5. Effort <span class="note">score 1&ndash;5, calculated; 5 = most work</span></h2>
+    <p><b>Why it matters:</b> it is the cost side. A pull that needs many segments and special rules takes longer, so it should earn its place.</p>
+    <div style="overflow-x:auto"><table class="keytbl"><thead><tr><th>What adds work</th><th>Points</th></tr></thead><tbody>
+      <tr><td>Starting point</td><td>1</td></tr>
+      <tr><td>2&ndash;3 segments</td><td>+1</td></tr><tr><td>4 or more segments</td><td>+2</td></tr>
+      <tr><td>Overlays needed (Epsilon, Experian, etc.)</td><td>+1</td></tr>
+      <tr><td>Conquest rule: audience must <i>not</i> visit the brand's own site</td><td>+1</td></tr>
+      <tr><td>Win-back rule: audience used to visit the brand's site, then stopped</td><td>+1</td></tr>
+    </tbody></table></div>
+    <p class="note">Capped at 5.</p>
+  </div>
+
+  <div class="card">
+    <h2>Putting it together</h2>
+    <p><b>Value</b> = (Due-date score + Opportunity &divide; 2 + Campaign success &divide; 2 + Signal &divide; 2) &divide; 4. Opportunity, Success and Signal are halved so every part sits on the same 1&ndash;5 scale. <b>Priority</b> = the same top part &divide; Effort.</p>
+    <p><b>Worked example.</b> Due in 5 days (4), Opportunity 8 (4), Campaign success 7 (3.5), Signal 9 (4.5) and Effort 3. The top part is 4 + 4 + 3.5 + 4.5 = 16. Value = 16 &divide; 4 = <b>4.0</b>. Priority = 16 &divide; 3 = <b>5.3</b>. High value, low effort: a <b>Quick Win</b>.</p>
+    <div style="overflow-x:auto"><table class="keytbl"><thead><tr><th>Box</th><th>Value</th><th>Effort</th><th>What to do</th></tr></thead><tbody>
+      <tr><td><b>Quick Win</b></td><td>3 or higher</td><td>3 or lower</td><td>Do first.</td></tr>
+      <tr><td><b>Big Bet</b></td><td>3 or higher</td><td>Above 3</td><td>Worth doing; plan and resource it.</td></tr>
+      <tr><td><b>Fill-In</b></td><td>Below 3</td><td>3 or lower</td><td>Do when there is spare capacity.</td></tr>
+      <tr><td><b>Time Sink</b></td><td>Below 3</td><td>Above 3</td><td>Decline or reduce the scope.</td></tr>
+    </tbody></table></div>
+    <p class="note"><b>Order and ties:</b> the queue ranks by priority, and ties go to the higher due-date score. Choose <b>Manual</b> in the Order menu and drag rows to set your own order; the order is saved and shared with the team. Older entries scored before these changes are converted to the new scales automatically, and any without a Signal check are treated as a neutral 5.</p>
   </div>
 </div>
 </div>
