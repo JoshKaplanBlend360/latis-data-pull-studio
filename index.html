@@ -850,7 +850,7 @@ $('w_gen').onclick=async()=>{
   if(text.length<20){$('w_err').textContent='Drop in an intake form or paste its text first.';return}
   $('w_gen').disabled=true;$('w_status').textContent='Drafting (about 30 seconds)...';
   try{const r=await ai('writeups',{intakeText:text,combined:$('w_comb').checked});
-    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||''};if(!$('w_geo').value.trim()&&r.geo)$('w_geo').value=r.geo;if(!$('w_camp').value.trim()&&r.campaign)$('w_camp').value=r.campaign;fillDomains(text);mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);renderWItems();$('w_status').textContent=W.items.length+' write-ups drafted. Edit anything below.'}
+    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||''};if(!$('w_geo').value.trim()&&r.geo)$('w_geo').value=r.geo;if(!$('w_camp').value.trim()&&r.campaign)$('w_camp').value=r.campaign;fillDomains(text);mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);{const have=($('w_cd').value+' '+$('w_ed').value).toLowerCase();const ex=extractDoms((r.items||[]).map(i=>i.paragraph).join(' ')).split(', ').filter(d=>d&&have.indexOf(d)<0);if(ex.length){mergeList('w_ed',ex);$('w_domMsg').textContent+=' Added '+ex.length+' domains named in the drafted write-ups to the enthusiast list.'}}renderWItems();$('w_status').textContent=W.items.length+' write-ups drafted. Edit anything below.'}
   catch(e){$('w_err').textContent=e.message||String(e);$('w_status').textContent=''}
   $('w_gen').disabled=false;
 };
