@@ -473,11 +473,12 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
       const J = ctx.journeys.slice(0, 8), n = J.length;
       const m = {
         1: V + " journeys, pre-built on the Latis Feature Store",
-        2: (t) => t.replace(/^\d+/, n).replace(/automotive/i, lc(V)),
+        2: (t) => { const np = J.filter((j) => j.proposed).length; return np ? n + " " + lc(V) + " journeys: " + (n - np) + " defined in the Latis taxonomy, " + np + " proposed (*) \u2014 each follows the same stages, state and features." : t.replace(/^\d+/, n).replace(/automotive/i, lc(V)); },
+        38: (t) => J.some((j) => j.proposed) ? "* Proposed for this industry, not yet in the Latis taxonomy. Others per the Latis Event Data Dictionary (v1.1, Oct 2026). Standard feature store and Latis Audiences catalog: phased release beginning Q4 2026." : t,
         37: c.featureStore.callout,
       };
       J.forEach((j, k) => {
-        m[5 + 4 * k] = j.name;
+        m[5 + 4 * k] = j.name + (j.proposed ? " *" : "");
         m[6 + 4 * k] = "Decision window: " + j.window;
         m[8 + 4 * k] = j.action;
       });
@@ -876,10 +877,24 @@ $('w_saved').addEventListener('click',async e=>{const id=e.target.dataset.id;if(
 
 /* ---------- Decks ---------- */
 const JR=window.LATIS_JOURNEYS,BYID=Object.fromEntries(JR.map(j=>[j.id,j])),VJ=window.LATIS_VJ,AUTO=window.LATIS_AUTO;
-if(!VJ['QSR'])VJ['QSR']=['QSR_DELIVERY','RET_GROCERY_ONLINE','MED_THEATRICAL','MED_TICKETS'];
+VJ['QSR']=['QSR_DELIVERY'];
+const PROP={'QSR':[
+ {name:'Restaurant-app order & pickup',window:'Minutes–hours per order',action:'Mobile order placed in a chain app for pickup or drive-thru (app order confirmation path); repeat ordering cadence'},
+ {name:'Loyalty-program enrollment & redemption',window:'7–30 days',action:'Rewards account created or reward redeemed (loyalty sign-up and redemption path); recurring visits follow'},
+ {name:'Limited-time-offer & new-menu trial',window:'1–14 days',action:'Promo item ordered after offer research (deal-page visit followed by app or delivery order)'},
+ {name:'Coupon & value-meal seeking',window:'1–7 days',action:'Coupon, deal or value-menu order placed (deal-site research followed by order path)'},
+ {name:'Group, family & catering order',window:'3–21 days',action:'Large or catering order placed (catering-page research followed by bulk-order path)'},
+ {name:'Late-night & weekend delivery habit',window:'Recurring, weekly',action:'Repeat evening or weekend delivery orders (delivery-platform order path at recurring cadence)'},
+ {name:'Breakfast & morning-commute habit',window:'Recurring, daily–weekly',action:'Morning mobile orders or coffee-and-breakfast app orders at recurring cadence'},
+ {name:'Chain switch & competitor trial',window:'7–30 days',action:'First order placed with a competing chain after research on its menu or app (new-brand order path)'}]};
 const SUPP={'Education':['RET_BTS','RET_CE'],'Food & Dining':['MED_THEATRICAL','MED_TICKETS'],'Travel & Transportation':['MED_TICKETS','FIN_CARD'],'Real Estate':['HOM_FURNISH','HOM_IMPROVE'],'Consumer Electronics':['RET_HOLIDAY'],'Sports & Recreation':['RET_APPAREL']},FALLBACK=['RET_HOLIDAY','FIN_CARD','TEL_HANDSET','MED_STREAM_ADD','HOM_SMART','RET_APPAREL'];
 function journeyIdsFor(v,c){const out=[],add=l=>(l||[]).forEach(i=>{if(BYID[i]&&out.indexOf(i)<0&&out.length<8)out.push(i)});
-  add(VJ[v]);add(SUPP[v]);add(c&&c.journeyIds);add(JR.filter(j=>j.cat===v).map(j=>j.id));add(FALLBACK);add(JR.map(j=>j.id));return out}
+  add(VJ[v]);add(SUPP[v]);add(JR.filter(j=>j.cat===v).map(j=>j.id));
+  const objs=out.map(i=>BYID[i]);
+  const pr=(c&&c.proposedJourneys&&c.proposedJourneys.length?c.proposedJourneys:PROP[v]||[]).filter(j=>j&&j.name&&j.action);
+  pr.forEach(j=>{if(objs.length<8)objs.push({name:j.name,window:j.window||'Varies',action:j.action,proposed:true})});
+  if(objs.length<8){add(c&&c.journeyIds);add(FALLBACK);add(JR.map(j=>j.id));out.slice(objs.filter(o=>!o.proposed).length).forEach(i=>{if(objs.length<8)objs.push(BYID[i])})}
+  return objs.slice(0,8)}
 const VERTS=Object.keys(VJ).sort();
 $('d_vert').innerHTML=VERTS.map(v=>'<option value="'+esc(v)+'">'+esc(v==='QSR'?'QSR (Quick Service Restaurants)':v)+'</option>').join('')+'<option value="__custom">Other...</option>';
 $('d_vert').value='Automotive';
@@ -911,7 +926,7 @@ $('d_gen').onclick=async()=>{
   $('d_gen').disabled=true;
   try{
     let c,ids;
-    if(v==='Automotive'){c=JSON.parse(JSON.stringify(AUTO));ids=c.journeyIds;delete c.journeyIds;msg('Building...')}
+    if(v==='Automotive'){c=JSON.parse(JSON.stringify(AUTO));ids=c.journeyIds.slice(0,8).map(i=>BYID[i]);delete c.journeyIds;msg('Building...')}
     else{msg('Writing the '+v+' content (about 45 seconds)...');c=await ai('vertical',{vertical:v==='QSR'?'QSR (quick-service restaurants)':v,notes:''});ids=journeyIdsFor(v,c);delete c.journeyIds}
     c.vertical=v;
     if(!ids||!ids.length)throw new Error('No Feature Store journeys found for this industry.');
@@ -924,7 +939,7 @@ $('d_gen').onclick=async()=>{
         if(f)ph.push(await coverJpeg(f));else if(got[i])ph.push(got[i]);else ph.push(i<4?null:await tile(i,c.journey.cols[i].day,v))}
     }
     const tpl=await (await fetch('Latis_Vertical_Template.pptx')).arrayBuffer();
-    const bytes=await LatisPatch.buildDeck(JSZip,tpl,c,{journeys:ids.slice(0,8).map(i=>BYID[i])},ph);
+    const bytes=await LatisPatch.buildDeck(JSZip,tpl,c,{journeys:ids},ph);
     download('Latis Vertical Deck '+safe(v)+'.pptx',new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'}));
     msg('Done. The '+v+' deck was downloaded.'+pexNote+' Spot-check text fit and photos on slides 7 to 13.','ok');
   }catch(e){msg(e.message||String(e),'err')}
