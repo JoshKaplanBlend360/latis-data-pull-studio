@@ -772,14 +772,14 @@ async function makeDocx(items,head){
     b+=para(run('EMBEDDINGS WRITE-UP',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
     b+=para(run(it.category,{b:1,sz:22}),{after:80});
     b+=para(run(it.audienceName,{b:1})+run(' — '+it.paragraph),{after:160,bullet:1});
-    if(it.kind!=='combined'){const rs=refSites(it);
-      if(rs.comp.length||rs.enth.length){b+=para(run('REFERENCE SITES',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
-        if(rs.comp.length)b+=para(run('Competitor sites: ',{b:1})+run(rs.comp.join(', ')),{after:160});
-        if(rs.enth.length)b+=para(run('Enthusiast sites: ',{b:1})+run(rs.enth.join(', ')),{after:160})}}
     if(it.hp&&it.hp.need==='yes'&&it.kind!=='combined'){
       b+=para(run('HARD PULL',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
       hardPull(it).forEach(l=>{b+=Array.isArray(l)?l.map(x=>para(run('•  '+x),{after:40})).join('')+para('',{after:80}):para(run(l),{after:160})});
     }
+    if(it.kind!=='combined'){const rs=refSites(it);
+      if(rs.comp.length||rs.enth.length){b+=para(run('REFERENCE SITES',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
+        if(rs.comp.length)b+=para(run('Competitor sites: ',{b:1})+run(rs.comp.join(', ')),{after:160});
+        if(rs.enth.length)b+=para(run('Enthusiast sites: ',{b:1})+run(rs.enth.join(', ')),{after:160})}}
     b+=para(run('----------------------------------------',{color:'A99A89'}),{after:160});
   });
   const z=new JSZip();
@@ -940,6 +940,7 @@ async function buildSites(force){const text=$('w_text').value.trim(),client=$('w
   const before=currentSites().length;mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);
   if(Array.isArray(r.broadDomains)){AIBROADSET=true;AIBROAD=r.broadDomains.map(d=>String(d).toLowerCase().replace(/^www\./,'')).filter(Boolean).slice(0,6)}
   SB=key;const added=currentSites().length-before;$('w_domMsg').textContent='Built out the site lists from the intake form plus category research: '+added+' sites added. Edit as needed.';renderBroad();$('w_status').textContent=''}
+function embOk(){return !!(W.embOk||(W.items||[]).some(it=>it.hp&&it.hp.need))}
 function renderWItems(){
   W.items.forEach(it=>{if(it.ucType===undefined)it.ucType=guessUC(it)});syncUC();
   $('w_out').style.display=W.items.length?'':'none';
@@ -948,10 +949,12 @@ function renderWItems(){
     '<div class="row2"><div><label>Use case title</label><input data-k="title" value="'+esc(it.title)+'"></div><div><label>Category header</label><input data-k="category" value="'+esc(it.category)+'"></div></div>'+
     '<div class="fld"><label>Audience name</label><input data-k="audienceName" value="'+esc(it.audienceName)+'"></div>'+
     '<div class="fld"><label>Write-up</label><textarea data-k="paragraph" rows="5">'+esc(it.paragraph)+'</textarea></div>'+
-    (it.kind==='combined'?'':hpControls(it,i))+'<div class="bar"><button class="btn danger sm wdel" data-i="'+i+'">Remove</button></div></div>').join('');
-  const un=W.items.filter(it=>it.kind!=='combined'&&!(it.hp&&it.hp.need)).length;
-  renderBroad();$('w_hpnote').style.display=W.items.length&&un?'':'none';$('w_hpnote').innerHTML='<b>Next step:</b> '+un+' use case'+(un===1?'':'s')+' still need an answer to "Does this use case need hard pull rules?" Answer on each write-up below.';
+    (it.kind==='combined'||!embOk()?'':hpControls(it,i))+'<div class="bar"><button class="btn danger sm wdel" data-i="'+i+'">Remove</button></div></div>').join('');
+  const un=W.items.filter(it=>it.kind!=='combined'&&!(it.hp&&it.hp.need)).length,hn=$('w_hpnote');
+  renderBroad();hn.style.display=W.items.length&&(!embOk()||un)?'':'none';
+  hn.innerHTML=!embOk()?'<b>Step 1 done: embeddings pulled.</b> Review and edit them below. When they look right, continue to the hard pull rules. <button class="btn sm" id="w_emb_ok" type="button" style="margin-left:8px">Embeddings look good: add hard pull rules</button>':'<b>Step 2:</b> '+un+' use case'+(un===1?'':'s')+' still need an answer to "Does this use case need rules applied after the embeddings?" Answer on each write-up below.';
 }
+$('w_hpnote').addEventListener('click',e=>{if(e.target.id==='w_emb_ok'){W.embOk=true;renderWItems();wAuto()}});
 $('w_items').addEventListener('input',e=>{const wi=e.target.closest('.wi');if(wi&&e.target.dataset.k)W.items[+wi.dataset.i][e.target.dataset.k]=e.target.value;if(e.target.dataset.k==='ucType')syncUC();
   if(!wi)return;const it=W.items[+wi.dataset.i];
   if(e.target.dataset.h||e.target.dataset.r){it.hp=Object.assign({},HPD,it.hp||{});
@@ -974,7 +977,7 @@ $('w_gen').onclick=async()=>{
   if(text.length<20){$('w_err').textContent='Drop in an intake form or paste its text first.';return}
   $('w_gen').disabled=true;$('w_status').textContent='Drafting (about 30 seconds)...';
   try{const r=await ai('writeups',{intakeText:text,combined:$('w_comb').checked});
-    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||'',broad:W.broad||{}};if(!$('w_geo').value.trim()&&r.geo)$('w_geo').value=r.geo;if(!$('w_camp').value.trim()&&r.campaign)$('w_camp').value=r.campaign;fillDomains(text);mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);{const have=($('w_cd').value+' '+$('w_ed').value).toLowerCase();const ex=extractDoms((r.items||[]).map(i=>i.paragraph).join(' ')).split(', ').filter(d=>d&&have.indexOf(d)<0);if(ex.length){mergeList('w_ed',ex);$('w_domMsg').textContent+=' Added '+ex.length+' domains named in the drafted write-ups to the enthusiast list.'}}renderWItems();try{await buildSites()}catch(e2){$('w_domMsg').textContent+=' Could not build out more sites ('+(e2.message||e2)+'). If this says Unknown task, rerun Deploy Back End.command.'}renderWItems();await saveW(true);$('w_status').textContent=W.items.length+' write-ups drafted and saved. Next: on each write-up, say whether it needs hard pull rules.'}
+    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||'',embOk:false,broad:W.broad||{}};if(!$('w_geo').value.trim()&&r.geo)$('w_geo').value=r.geo;if(!$('w_camp').value.trim()&&r.campaign)$('w_camp').value=r.campaign;fillDomains(text);mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);{const have=($('w_cd').value+' '+$('w_ed').value).toLowerCase();const ex=extractDoms((r.items||[]).map(i=>i.paragraph).join(' ')).split(', ').filter(d=>d&&have.indexOf(d)<0);if(ex.length){mergeList('w_ed',ex);$('w_domMsg').textContent+=' Added '+ex.length+' domains named in the drafted write-ups to the enthusiast list.'}}renderWItems();try{await buildSites()}catch(e2){$('w_domMsg').textContent+=' Could not build out more sites ('+(e2.message||e2)+'). If this says Unknown task, rerun Deploy Back End.command.'}renderWItems();await saveW(true);$('w_status').textContent=W.items.length+' write-ups drafted and saved. Next: on each write-up, say whether it needs hard pull rules.'}
   catch(e){$('w_err').textContent=e.message||String(e);$('w_status').textContent=''}
   $('w_gen').disabled=false;
 };
@@ -989,7 +992,7 @@ $('w_dl').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Clien
   if(un&&!window.confirm(un+' use case'+(un===1?' has':'s have')+' not been answered for hard pull rules, so they will download as embeddings only. Download anyway?'))return;
   const ub=broadFound().filter(d=>!(W.broad&&W.broad[d]));if(ub.length&&!window.confirm(ub.length+' broad site'+(ub.length===1?'':'s')+' (' + ub.slice(0,6).join(', ')+(ub.length>6?', ...':'')+') have not been decided and will be included in the footprint. They can skew results. Download anyway?'))return;
   const b=await makeDocx(W.items,docHead(c));download(safe(c)+' Data Pull.docx',b)};
-async function saveW(auto){const c=$('w_client').value.trim()||W.client||'Client';W.id=W.id||uid();const old=store.writeups.find(x=>x.id===W.id);await db.put('writeups',{id:W.id,client:c,items:W.items,geo:W.geo,broad:W.broad||{},req:reqObj(),doms:allDoms()+($('w_brand').value.trim()?', '+$('w_brand').value.trim().toLowerCase():''),cdoms:$('w_cd').value.trim(),edoms:$('w_ed').value.trim(),by:who(),created:old?old.created:Date.now(),updated:Date.now()});$('w_status').textContent=auto?'Intake read and saved automatically. The Prioritize page will find it when you type the client name.':'Saved. It is now available on the Prioritize page.'}
+async function saveW(auto){const c=$('w_client').value.trim()||W.client||'Client';W.id=W.id||uid();const old=store.writeups.find(x=>x.id===W.id);await db.put('writeups',{id:W.id,client:c,items:W.items,geo:W.geo,embOk:!!W.embOk,broad:W.broad||{},req:reqObj(),doms:allDoms()+($('w_brand').value.trim()?', '+$('w_brand').value.trim().toLowerCase():''),cdoms:$('w_cd').value.trim(),edoms:$('w_ed').value.trim(),by:who(),created:old?old.created:Date.now(),updated:Date.now()});$('w_status').textContent=auto?'Intake read and saved automatically. The Prioritize page will find it when you type the client name.':'Saved. It is now available on the Prioritize page.'}
 $('w_save').onclick=()=>saveW(false);
 
 function renderWSaved(){
@@ -997,7 +1000,7 @@ function renderWSaved(){
   $('w_saved').innerHTML=l.length?l.map(w=>'<div class="saved"><div class="grow"><b>'+esc(w.client)+'</b> <span class="note">'+w.items.length+' write-ups &middot; '+esc(w.by||'')+' &middot; '+new Date(w.updated||w.created).toLocaleDateString()+'</span></div><button class="btn sec sm wopen" data-id="'+w.id+'">Open</button><button class="btn danger sm wrm" data-id="'+w.id+'">Delete</button></div>').join(''):'<div class="note">Nothing saved yet.</div>';
 }
 $('w_saved').addEventListener('click',async e=>{const id=e.target.dataset.id;if(!id)return;
-  if(e.target.classList.contains('wopen')){const w=store.writeups.find(x=>x.id===id);W={id:w.id,client:w.client,items:JSON.parse(JSON.stringify(w.items)),geo:w.geo||'',broad:w.broad||{}};$('w_client').value=w.client;setReq(w.req);$('w_cd').value=w.cdoms||'';$('w_ed').value=w.edoms||(w.cdoms?'':w.doms||'');renderWItems();window.scrollTo({top:0,behavior:'smooth'})}
+  if(e.target.classList.contains('wopen')){const w=store.writeups.find(x=>x.id===id);W={id:w.id,client:w.client,items:JSON.parse(JSON.stringify(w.items)),geo:w.geo||'',embOk:!!w.embOk,broad:w.broad||{}};$('w_client').value=w.client;setReq(w.req);$('w_cd').value=w.cdoms||'';$('w_ed').value=w.edoms||(w.cdoms?'':w.doms||'');renderWItems();window.scrollTo({top:0,behavior:'smooth'})}
   if(e.target.classList.contains('wrm')){if(e.target.dataset.arm==='1')await db.del('writeups',id);else{e.target.dataset.arm='1';e.target.textContent='Confirm?';setTimeout(()=>{e.target.dataset.arm='';e.target.textContent='Delete'},3000)}}});
 
 /* ---------- Decks ---------- */
