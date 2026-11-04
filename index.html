@@ -866,6 +866,7 @@ function domList(v){return [...new Set(String(v||'').split(/[\s,;]+/).map(d=>d.t
 function ucKey(it){return it.ucType==='Conquesting'?'c':it.ucType==='Win Back'?'w':it.ucType==='Find Customers'||it.ucType==='Custom'?'f':''}
 function ovlLine(r){const m=ATTR[r.a]||ATTR.age;if(r.a==='male')return 'Male-headed household composition, via the fmlycmposdesc field'+DICT+' — a partial male-skew indicator only';return m[0]+(r.v?' '+r.v:'')+', via the '+m[1]+' field'+DICT}
 function exclLine(r){const m=ATTR[r.a]||ATTR.age;let t='Exclude households where the '+m[0].toLowerCase()+' is '+(r.v||'[value]')+', via the '+m[1]+' field'+DICT;if(r.a==='age'&&/18\s*[–-]\s*24/.test(r.v||''))t+=', as a conservative proxy for the under-21 exclusion — the age field is banded and cannot isolate under-21 households exactly';return t+'.'}
+function inclLine(r){const m=ATTR[r.a]||ATTR.age;return 'Include households where the '+m[0].toLowerCase()+' is '+(r.v||'[value]')+', via the '+m[1]+' field'+DICT+'.'}
 function guessHP(it){const t=(it.paragraph||'')+' '+(it.title||''),o=[],x=[];
   let m=t.match(/(\d{2})\s*[–-]\s*(\d{2})/);if(m&&+m[1]>=18&&+m[2]<=80&&+m[2]>+m[1])o.push({a:'age',v:m[1]+'–'+m[2]});
   m=t.match(/\$\s?(\d{2,3})\s?K\+?/i);if(m&&/(income|HHI)/i.test(t))o.push({a:'income',v:'of roughly $'+m[1]+'K and above'});
@@ -888,6 +889,7 @@ function hardPull(it){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),brand=
   String(h.extra||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>out.push(t));
   const hrs=h.hours||'5',kp=[];if(k!=='c'&&enth.length)kp.push('enthusiast-site visits ≥'+x+'x');if(comp.length)kp.push('competitor-site visits ≥'+x+'x');if(shows.length)kp.push('named-show viewing occurrence ≥30 minutes');if(ch.length)kp.push('channel hours watched ≥'+hrs);if(st.length)kp.push('streaming hours watched ≥'+hrs);
   if(kp.length)out.push('Keep pairs where '+kp.join(' OR ')+'.');
+  (h.incl||[]).forEach(r=>out.push(inclLine(r)));
   (h.excl||[]).forEach(r=>out.push(exclLine(r)));
   const ov=(h.ovl||[]).map(ovlLine);
   if(ov.length){out.push('Overlay household attributes ('+(h.ovlMode==='all'?'all of these conditions':'at least one of these conditions')+'):');out.push(ov)}
@@ -908,16 +910,12 @@ function hpControls(it,i){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),on
       html+='<div class="hpsec">Timing rules</div><div class="frm">'+inp('look','Active in trailing (days)','60');
       if(k==='c')html+=inp('nb','No activity on the brand site for (days)','60');
       if(k==='w')html+=inp('nb','No activity on the brand site for (days)','60')+inp('prior','Was engaged with the brand, confirmed (days) before that','30');
-      html+=inp('thresh','Keep households with site visits of at least (x)','2')+'</div>';
-      html+='<div class="hint">'+(k==='c'?'Conquesting: households visiting competitor sites with no recent activity on the brand site.':k==='w'?'Win Back: households that were visiting the brand site, then left for the period above, and are active in the category elsewhere.':'Find Customers: category enthusiasts and competitor shoppers; the brand site is included.')+(($('w_brand').value||'').trim()?' Brand domain: '+esc($('w_brand').value.trim())+'.':' Add the brand domain in Request details first.')+'</div>';
-      html+='<div class="hpsec">Sites</div>'+ta('comp','Competitor sites for this use case','Leave blank to use the competitor sites above',2);
-      if(k!=='c')html+=ta('enth','Enthusiast sites for this use case','Leave blank to use the enthusiast sites above',2);
-      html+='<div class="hpsec">TV and streaming (optional)</div><div class="row2"><div><label>Named shows</label><input data-h="shows" value="'+esc(h.shows)+'" placeholder="e.g. Monday Night Football, College GameDay"></div><div><label>TV channels</label><input data-h="channels" value="'+esc(h.channels)+'" placeholder="e.g. ESPN, FS1, NFL Network"></div></div>';
-      html+='<div class="row2"><div><label>Streaming services</label><input data-h="streams" value="'+esc(h.streams)+'" placeholder="e.g. YouTube TV, Fubo, Peacock"></div>'+inp('hours','Channel / streaming hours watched at least','5')+'</div>';
+      html+='</div>';
+      html+='<div class="hint">'+(k==='c'?'Conquesting: households visiting competitor sites with no activity on the brand site for the period above.':k==='w'?'Win Back: households that were visiting the brand site, then left for the period above, and are active in the category elsewhere.':'Find Customers: category enthusiasts and competitor shoppers; the brand site is included.')+(($('w_brand').value||'').trim()?' Brand domain: '+esc($('w_brand').value.trim())+'.':' Add the brand domain in Request details first.')+'</div>';
+      html+='<div class="hpsec">Inclusions</div>'+rowsHtml('incl',h.incl,'e.g. 25–54')+'<div class="bar"><button class="btn sec sm" data-act="addincl">+ Add inclusion</button></div>';
       html+='<div class="hpsec">Exclusions</div>'+rowsHtml('excl',h.excl,'e.g. 18–24')+'<div class="bar"><button class="btn sec sm" data-act="addexcl">+ Add exclusion</button><button class="btn sec sm" data-act="u21">Exclude under 21 (18–24 proxy)</button></div>';
       html+='<div class="hpsec">Household overlay</div>'+rowsHtml('ovl',h.ovl,'e.g. 25–54 or of roughly $75K and above')+'<div class="bar"><button class="btn sec sm" data-act="addovl">+ Add overlay attribute</button><select data-h="ovlMode" style="max-width:260px"><option value="any"'+(h.ovlMode!=='all'?' selected':'')+'>At least one of these conditions</option><option value="all"'+(h.ovlMode==='all'?' selected':'')+'>All of these conditions</option></select></div>';
       html+='<div class="hint">Attributes come from the Charter data dictionary. There is no direct gender field; male-headed composition is a partial indicator only.</div>';
-      html+=ta('extra','Any other hard pull rules (one per line, optional)','Each line is added as its own step before the keep-pairs rule',2);
       html+='<div class="bar"><button class="btn sec sm" data-act="copyall">Copy these rules to the other use cases</button></div>';
     }
     html+='<label>Hard pull preview</label><pre class="hpprev">'+esc(k?hardPullText(it):'')+'</pre>';
@@ -972,7 +970,8 @@ $('w_items').addEventListener('change',e=>{const wi=e.target.closest('.wi');if(!
   if(e.target.dataset.h==='need'){if(e.target.value==='yes'&&it.hp&&!(it.hp.ovl&&it.hp.ovl.length)&&!(it.hp.excl&&it.hp.excl.length)&&!it.hp.init){const g=guessHP(it);it.hp.ovl=g.ovl;it.hp.excl=g.excl;it.hp.init=1}renderWItems();wAuto()}
   else if(e.target.dataset.k==='ucType'){renderWItems();wAuto()}});
 $('w_items').addEventListener('click',e=>{if(e.target.classList.contains('wdel')){W.items.splice(+e.target.dataset.i,1);renderWItems();return}
-  const act=e.target.dataset.act,wi=e.target.closest('.wi');if(!act||!wi)return;const it=W.items[+wi.dataset.i];it.hp=Object.assign({},HPD,it.hp||{});it.hp.ovl=it.hp.ovl||[];it.hp.excl=it.hp.excl||[];
+  const act=e.target.dataset.act,wi=e.target.closest('.wi');if(!act||!wi)return;const it=W.items[+wi.dataset.i];it.hp=Object.assign({},HPD,it.hp||{});it.hp.ovl=it.hp.ovl||[];it.hp.excl=it.hp.excl||[];it.hp.incl=it.hp.incl||[];
+  if(act==='addincl')it.hp.incl.push({a:'age',v:''});if(act==='delincl')it.hp.incl.splice(+e.target.dataset.ri,1);
   if(act==='addovl')it.hp.ovl.push({a:'age',v:''});if(act==='addexcl')it.hp.excl.push({a:'age',v:''});
   if(act==='u21'&&!it.hp.excl.some(r=>r.a==='age'&&/18/.test(r.v)))it.hp.excl.push({a:'age',v:'18–24'});
   if(act==='delovl')it.hp.ovl.splice(+e.target.dataset.ri,1);if(act==='delexcl')it.hp.excl.splice(+e.target.dataset.ri,1);
