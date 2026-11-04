@@ -925,7 +925,7 @@ function hpControls(it,i){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),on
   return html+'</div>'}
 
 /* ---------- broad-site check ---------- */
-const BROAD=new Set(['amazon.com','walmart.com','target.com','ebay.com','costco.com','etsy.com','aliexpress.com','temu.com','craigslist.org','yelp.com','doordash.com','ubereats.com','grubhub.com','instacart.com','google.com','bing.com','yahoo.com','msn.com','facebook.com','instagram.com','tiktok.com','youtube.com','reddit.com','pinterest.com','twitter.com','x.com','linkedin.com','snapchat.com','wikipedia.org','quora.com','nextdoor.com','paypal.com','apple.com','microsoft.com']);
+const BROAD=new Set(['amazon.com','walmart.com','target.com','ebay.com','google.com','bing.com','yahoo.com','facebook.com','instagram.com','tiktok.com','youtube.com','reddit.com','pinterest.com','x.com','twitter.com','yelp.com','doordash.com','ubereats.com','grubhub.com']);
 let AIBROAD=[],AIBROADSET=false;
 function currentSites(){return [...new Set(domList($('w_cd').value+' '+$('w_ed').value+' '+(W.items||[]).map(i=>(i.hp&&(i.hp.comp+' '+i.hp.enth))||'').join(' ')))]}
 function broadFound(){const b=($('w_brand').value||'').trim().toLowerCase();return currentSites().filter(d=>d!==b&&(AIBROADSET?AIBROAD.indexOf(d)>=0:BROAD.has(d)))}
@@ -948,7 +948,7 @@ async function buildSites(force){const text=$('w_text').value.trim(),client=$('w
     const ask='SITE LIST BUILD-OUT. Client: '+client+'. Brand domain: '+($('w_brand').value||'unknown')+'. The intake form below is only a starting point. In competitorDomains and enthusiastDomains return COMPREHENSIVE, uncapped lists of real root domains (aim for 30 to 60 each): every site the form names, plus all the client\'s direct and indirect competitors, marketplaces, comparison sites and substitutes (competitors), and category review, publication, forum, deal, planning, retailer and interest sites (enthusiasts). Do not include the client brand domain. Do not repeat domains across the two lists. Items may be minimal.\n\nSITES ALREADY LISTED: competitors '+($('w_cd').value||'none')+'; enthusiast '+($('w_ed').value||'none')+'\n\n'+text;
     r=await ai('writeups',{intakeText:ask,combined:false})}
   const before=currentSites().length;mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);
-  if(Array.isArray(r.broadDomains)){AIBROADSET=true;AIBROAD=r.broadDomains.map(d=>String(d).toLowerCase().replace(/^www\./,'')).filter(Boolean).slice(0,10)}
+  if(Array.isArray(r.broadDomains)){AIBROADSET=true;AIBROAD=r.broadDomains.map(d=>String(d).toLowerCase().replace(/^www\./,'')).filter(Boolean).slice(0,6)}
   SB=key;const added=currentSites().length-before;$('w_domMsg').textContent='Built out the site lists from the intake form plus category research: '+added+' sites added. Edit as needed.';renderBroad();$('w_status').textContent=''}
 function renderWItems(){
   W.items.forEach(it=>{if(it.ucType===undefined)it.ucType=guessUC(it)});syncUC();
