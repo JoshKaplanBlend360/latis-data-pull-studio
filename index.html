@@ -772,6 +772,10 @@ async function makeDocx(items,head){
     b+=para(run('EMBEDDINGS WRITE-UP',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
     b+=para(run(it.category,{b:1,sz:22}),{after:80});
     b+=para(run(it.audienceName,{b:1})+run(' — '+it.paragraph),{after:160,bullet:1});
+    if(it.kind!=='combined'){const rs=refSites(it);
+      if(rs.comp.length||rs.enth.length){b+=para(run('REFERENCE SITES',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
+        if(rs.comp.length)b+=para(run('Competitor sites: ',{b:1})+run(rs.comp.join(', ')),{after:160});
+        if(rs.enth.length)b+=para(run('Enthusiast sites: ',{b:1})+run(rs.enth.join(', ')),{after:160})}}
     if(it.hp&&it.hp.need==='yes'&&it.kind!=='combined'){
       b+=para(run('HARD PULL',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
       hardPull(it).forEach(l=>{b+=Array.isArray(l)?l.map(x=>para(run('•\t'+x),{after:40})).join('')+para('',{after:80}):para(run(l),{after:160})});
@@ -873,28 +877,16 @@ function guessHP(it){const t=(it.paragraph||'')+' '+(it.title||''),o=[],x=[];
   if(/\bmales?\b|\bmen\b/i.test(t))o.push({a:'male',v:''});
   if(/\b21\+|\b21 and (?:older|over)|aged? 21/i.test(t))x.push({a:'age',v:'18–24'});
   return {ovl:o,excl:x}}
-function hardPull(it){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),brand=($('w_brand').value||'').trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]||'[brand domain TBD]';
-  const comp=domList(h.comp||$('w_cd').value).filter(d=>!isOut(d));let enth=domList(h.enth||$('w_ed').value).filter(d=>!isOut(d));
-  if(k==='f'&&brand.indexOf('.')>0&&enth.indexOf(brand)<0)enth.unshift(brand);if(k==='w')enth=enth.filter(d=>d!==brand);
-  const x=h.thresh||'2',out=[];
-  out.push('Population: US households, active in trailing '+h.look+' days.');
+function refSites(it){const brand=($('w_brand').value||'').trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+  return {comp:domList($('w_cd').value).filter(d=>d!==brand&&!isOut(d)),enth:domList($('w_ed').value).filter(d=>d!==brand&&!isOut(d))}}
+function hardPull(it){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),brand=($('w_brand').value||'').trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]||'[brand domain TBD]',out=[];
+  out.push('Applies to households active in the trailing '+h.look+' days.');
   if(k==='c')out.push('Confirm zero DNS activity to brand domain ('+brand+') in the last '+h.nb+' days.');
   if(k==='w')out.push('Confirm zero DNS activity to brand domain ('+brand+') in the last '+h.nb+' days, with prior engagement with the brand confirmed '+h.prior+'+ days before that.');
-  if(k!=='c'&&enth.length)out.push('Count enthusiast-site visits (from enthusiast domain list'+(k==='f'?', brand included':k==='w'?', brand excluded':'')+'): '+enth.join(', '));
-  if(comp.length)out.push('Count competitor-site visits (from competitor domain list): '+comp.join(', '));
-  const sp=v=>String(v||'').split(/[,\n;]+/).map(t=>t.trim()).filter(Boolean),shows=sp(h.shows),ch=sp(h.channels),st=sp(h.streams);
-  if(shows.length)out.push('Count named-show viewing occurrences, each ≥30 minutes in a single sitting (from Quantum Viewership: content_title; and VOD Viewing Stream: title_asset_name/content_asset_name as a best-effort secondary source): '+shows.join(', '));
-  if(ch.length)out.push('Count TV channel hours watched (from channel list): '+ch.join(', '));
-  if(st.length)out.push('Count IPTV/streaming hours watched (from streaming domain list): '+st.join(', '));
-  String(h.extra||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>out.push(t));
-  const hrs=h.hours||'5',kp=[];if(k!=='c'&&enth.length)kp.push('enthusiast-site visits ≥'+x+'x');if(comp.length)kp.push('competitor-site visits ≥'+x+'x');if(shows.length)kp.push('named-show viewing occurrence ≥30 minutes');if(ch.length)kp.push('channel hours watched ≥'+hrs);if(st.length)kp.push('streaming hours watched ≥'+hrs);
-  if(kp.length)out.push('Keep pairs where '+kp.join(' OR ')+'.');
   (h.incl||[]).forEach(r=>out.push(inclLine(r)));
   (h.excl||[]).forEach(r=>out.push(exclLine(r)));
   const ov=(h.ovl||[]).map(ovlLine);
   if(ov.length){out.push('Overlay household attributes ('+(h.ovlMode==='all'?'all of these conditions':'at least one of these conditions')+'):');out.push(ov)}
-  out.push('Geo: '+(($('w_geo').value||W.geo||'US').trim()));
-  out.push('Parameters: Total no. of households');
   return out}
 function hardPullText(it){return hardPull(it).map(l=>Array.isArray(l)?l.map(x=>'•  '+x).join('\n'):l).join('\n\n')}
 function attrSel(key,ri,rk,val){return '<select data-r="'+key+'" data-ri="'+ri+'" data-rk="'+rk+'">'+Object.keys(ATTR).map(k=>'<option value="'+k+'"'+(val===k?' selected':'')+'>'+ATTR[k][0]+' ('+ATTR[k][1]+')</option>').join('')+'</select>'}
@@ -902,8 +894,8 @@ function rowsHtml(key,rows,ph){return (rows||[]).map((r,ri)=>'<div class="hprow"
 function hpControls(it,i){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),on=h.need==='yes';
   const inp=(key,lab,ph)=>'<div><label>'+lab+'</label><input data-h="'+key+'" value="'+esc(h[key])+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+'></div>';
   const ta=(key,lab,ph,r)=>'<div class="fld"><label>'+lab+'</label><textarea data-h="'+key+'" rows="'+(r||2)+'" placeholder="'+esc(ph||'')+'">'+esc(h[key])+'</textarea></div>';
-  let html='<div class="hp"><div class="hpq"><b>Does this use case need hard pull rules?</b> The embeddings are drafted above. If yes, set the rules here and they are added to the write-up after the embeddings, in our standard hard pull format. If no, the write-up is embeddings only.'+
-   '<select data-h="need"><option value="">Not answered yet</option><option value="no"'+(h.need==='no'?' selected':'')+'>No, embeddings only</option><option value="yes"'+(on?' selected':'')+'>Yes, add hard pull rules</option></select></div>';
+  let html='<div class="hp"><div class="hpq"><b>Does this use case need rules applied after the embeddings?</b> The embeddings write-up above is the audience. Only add rules here if households must also meet a timing or brand-activity rule (for example Conquest or Win Back), an inclusion or exclusion, or a household overlay. If no, the write-up is embeddings only.'+
+   '<select data-h="need"><option value="">Not answered yet</option><option value="no"'+(h.need==='no'?' selected':'')+'>No, embeddings only</option><option value="yes"'+(on?' selected':'')+'>Yes, add rules after the embeddings</option></select></div>';
   if(on){
     if(!k)html+='<div class="msg err" style="display:block">Set the use case type above (Conquesting, Win Back, Find Customers or Custom) so the right rules are built.</div>';
     else{
@@ -918,7 +910,7 @@ function hpControls(it,i){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),on
       html+='<div class="hint">Attributes come from the Charter data dictionary. There is no direct gender field; male-headed composition is a partial indicator only.</div>';
       html+='<div class="bar"><button class="btn sec sm" data-act="copyall">Copy these rules to the other use cases</button></div>';
     }
-    html+='<label>Hard pull preview</label><pre class="hpprev">'+esc(k?hardPullText(it):'')+'</pre>';
+    html+='<label>Rules added after the embeddings (preview)</label><pre class="hpprev">'+esc(k?hardPullText(it):'')+'</pre>';
   }
   return html+'</div>'}
 
