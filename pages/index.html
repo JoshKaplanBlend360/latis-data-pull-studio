@@ -822,7 +822,7 @@ function fillDomains(text){const comp=formList(text,'Competitor Sites',/^List si
 function allDoms(){return [...new Set(($('w_cd').value+','+$('w_ed').value).split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(s=>s.indexOf('.')>0))].join(', ')}
 function mergeList(id,arr){const have=($(id).value||'').split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(Boolean);(arr||[]).forEach(d=>{d=String(d).toLowerCase().trim().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];if(d.indexOf('.')>0&&have.indexOf(d)<0)have.push(d)});$(id).value=have.join(', ')}
 $('w_file').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('w_fileMsg').textContent='Reading '+f.name+'...';
-  try{const t=await docxText(f);$('w_text').value=t;fillRequest(t);fillDomains(t);$('w_fileMsg').textContent='Read '+t.split('\n').length+' lines from '+f.name;if(!$('w_client').value){const m=t.match(/(?:Client|Brand|Advertiser)[^\n:]*[:\t]\s*([^\n]+)/i);if(m)$('w_client').value=m[1].trim().slice(0,60)}if($('w_client').value.trim())await saveW(true)}
+  try{const t=await docxText(f);$('w_text').value=t;fillRequest(t);fillDomains(t);$('w_fileMsg').textContent='Read '+t.split('\n').length+' lines from '+f.name;if(!$('w_client').value){const m=t.match(/(?:Client|Brand|Advertiser)[^\n:]*[:\t]\s*([^\n]+)/i);if(m)$('w_client').value=m[1].trim().slice(0,60)}if($('w_client').value.trim())await saveW(true);try{await buildSites();if($('w_client').value.trim())await saveW(true)}catch(e3){$('w_domMsg').textContent+=' Could not build out more sites automatically ('+(e3.message||e3)+').'}}
   catch(err){$('w_fileMsg').textContent='Could not read that file. Is it a .docx?'}};
 
 /* ---------- intake request details ---------- */
@@ -935,13 +935,21 @@ function renderBroad(){const l=broadFound(),c=$('w_broadcard');if(!c)return;c.st
   $('w_broadlist').innerHTML=l.map(d=>'<div class="hprow"><b style="min-width:170px">'+esc(d)+'</b><select data-bd="'+esc(d)+'"><option value="">Not decided</option><option value="in"'+(W.broad[d]==='in'?' selected':'')+'>Include in the footprint</option><option value="out"'+(W.broad[d]==='out'?' selected':'')+'>Leave out of the footprint</option></select></div>').join('')}
 $('w_broadlist').addEventListener('change',e=>{const d=e.target.dataset.bd;if(!d)return;W.broad=W.broad||{};if(e.target.value)W.broad[d]=e.target.value;else delete W.broad[d];renderWItems();wAuto()});
 ['w_cd','w_ed','w_brand'].forEach(id=>$(id).addEventListener('input',()=>{renderBroad()}));
-async function buildSites(){const text=$('w_text').value.trim(),client=$('w_client').value.trim()||W.client;
-  $('w_status').textContent='Researching and building out competitor and enthusiast sites (about a minute)...';
-  const uc=[...new Set(W.items.filter(i=>i.kind!=='combined').map(i=>i.ucType||i.title))].join(', ');
-  const r=await ai('sites',{client,brand:$('w_brand').value.trim(),useCases:uc,intakeText:text,competitors:$('w_cd').value,enthusiasts:$('w_ed').value});
+let SB='';
+async function buildSites(force){const text=$('w_text').value.trim(),client=$('w_client').value.trim()||W.client||'';
+  const key=client+'|'+text.length;if(!force&&SB===key)return;
+  $('w_status').textContent='Building out competitor and enthusiast sites from the intake form and category research (about a minute)...';
+  const uc=[...new Set((W.items||[]).filter(i=>i.kind!=='combined').map(i=>i.ucType||i.title))].join(', ');
+  let r;
+  try{r=await ai('sites',{client,brand:$('w_brand').value.trim(),useCases:uc,intakeText:text,competitors:$('w_cd').value,enthusiasts:$('w_ed').value})}
+  catch(e){
+    if(!/unknown task/i.test(e.message||''))throw e;
+    /* back end not redeployed yet: reuse the existing write-up task to build the lists */
+    const ask='SITE LIST BUILD-OUT. Client: '+client+'. Brand domain: '+($('w_brand').value||'unknown')+'. The intake form below is only a starting point. In competitorDomains and enthusiastDomains return COMPREHENSIVE, uncapped lists of real root domains (aim for 30 to 60 each): every site the form names, plus all the client\'s direct and indirect competitors, marketplaces, comparison sites and substitutes (competitors), and category review, publication, forum, deal, planning, retailer and interest sites (enthusiasts). Do not include the client brand domain. Do not repeat domains across the two lists. Items may be minimal.\n\nSITES ALREADY LISTED: competitors '+($('w_cd').value||'none')+'; enthusiast '+($('w_ed').value||'none')+'\n\n'+text;
+    r=await ai('writeups',{intakeText:ask,combined:false})}
   const before=currentSites().length;mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);
   AIBROAD=(r.broadDomains||[]).map(d=>String(d).toLowerCase().replace(/^www\./,'')).filter(Boolean);
-  const added=currentSites().length-before;$('w_domMsg').textContent='Built out the site lists from the intake form plus category research: '+added+' sites added. Edit as needed.';renderBroad()}
+  SB=key;const added=currentSites().length-before;$('w_domMsg').textContent='Built out the site lists from the intake form plus category research: '+added+' sites added. Edit as needed.';renderBroad();$('w_status').textContent=''}
 function renderWItems(){
   W.items.forEach(it=>{if(it.ucType===undefined)it.ucType=guessUC(it)});syncUC();
   $('w_out').style.display=W.items.length?'':'none';
@@ -984,7 +992,7 @@ function docHead(c){const ind=W.items.filter(i=>i.kind!=='combined'),nm=['','One
   const line='Client: '+c+'  |  Campaign: '+v('w_camp')+'  |  Flight: '+v('w_flight')+'  |  Geo: '+(($('w_geo').value||W.geo||'').trim()||'National')+'  |  Sales Planner: '+v('w_planner')+'  |  Sales Manager: '+v('w_mgr')+'  |  Priority: '+v('w_prio')+'  |  Due: '+due+'.';
   const list=lab.length>1?lab.slice(0,-1).join(', ')+(lab.length>2?',':'')+' and '+lab[lab.length-1]:lab[0]||'';
   return {title:c+' — Data Pull',sub:line+(ind.length?'\n'+(nm[ind.length]||ind.length)+' use case'+(ind.length===1?'':'s')+': '+list+'.':'')}}
-$('w_sites').onclick=async()=>{$('w_err').textContent='';$('w_sites').disabled=true;try{await buildSites();await saveW(true)}catch(e){$('w_err').textContent=e.message||String(e)}$('w_sites').disabled=false};
+$('w_sites').onclick=async()=>{$('w_err').textContent='';$('w_sites').disabled=true;try{await buildSites(true);await saveW(true)}catch(e){$('w_err').textContent=e.message||String(e)}$('w_sites').disabled=false};
 $('w_dl').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';
   const un=W.items.filter(it=>it.kind!=='combined'&&!(it.hp&&it.hp.need)).length;
   if(un&&!window.confirm(un+' use case'+(un===1?' has':'s have')+' not been answered for hard pull rules, so they will download as embeddings only. Download anyway?'))return;
