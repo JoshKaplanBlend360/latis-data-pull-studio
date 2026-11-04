@@ -778,7 +778,7 @@ async function makeDocx(items,head){
         if(rs.enth.length)b+=para(run('Enthusiast sites: ',{b:1})+run(rs.enth.join(', ')),{after:160})}}
     if(it.hp&&it.hp.need==='yes'&&it.kind!=='combined'){
       b+=para(run('HARD PULL',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
-      hardPull(it).forEach(l=>{b+=Array.isArray(l)?l.map(x=>para(run('•\t'+x),{after:40})).join('')+para('',{after:80}):para(run(l),{after:160})});
+      hardPull(it).forEach(l=>{b+=Array.isArray(l)?l.map(x=>para(run('•  '+x),{after:40})).join('')+para('',{after:80}):para(run(l),{after:160})});
     }
     b+=para(run('----------------------------------------',{color:'A99A89'}),{after:160});
   });
