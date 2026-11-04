@@ -243,7 +243,7 @@ table.qt tbody tr{cursor:default}
         <label style="margin-top:10px">Enthusiast sites (filled from the intake form)</label><textarea id="w_ed" rows="2" placeholder="e.g. slickdeals.net, eater.com"></textarea>
         <div class="hint" id="w_domMsg">Site names in the form are converted to domains. Edit as needed; these feed the Signal check on the Prioritize page.</div>
         <label style="margin-top:10px"><input type="checkbox" id="w_comb" checked style="width:auto;margin-right:6px">Include a combined write-up</label>
-        <div class="bar"><button class="btn" id="w_gen">Draft write-ups</button><span class="note" id="w_status"></span></div>
+        <div class="bar"><button class="btn" id="w_gen">Draft write-ups</button><button class="btn sec" id="w_sites" type="button">Build out sites</button><span class="note" id="w_status"></span></div>
         <div class="msg err" id="w_err"></div>
       </div>
     </div>
@@ -262,6 +262,11 @@ table.qt tbody tr{cursor:default}
       <div><label>Meeting type</label><select id="w_stage"><option value="">Not set</option><option>Initial Meeting</option><option>Proposal</option></select></div>
       <div class="chk w2"><label><input type="checkbox" id="w_uc_c">Conquest</label><label><input type="checkbox" id="w_uc_w">Win-Back</label><label><input type="checkbox" id="w_uc_f">Find Customers</label><label><input type="checkbox" id="w_uc_x">Custom</label></div>
     </div>
+  </div>
+  <div class="card" id="w_broadcard" style="display:none">
+    <h2>Broad sites: include in the footprint?</h2>
+    <p class="note">These sites sell or cover many different things, so visits to them may not signal interest in this category and can skew results. Choose whether each one is part of the footprint. Anything left out is removed from the hard pull site lists.</p>
+    <div id="w_broadlist"></div>
   </div>
   <div class="card" id="w_out" style="display:none">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><h2 style="margin:0">Review and edit</h2>
@@ -868,7 +873,7 @@ function guessHP(it){const t=(it.paragraph||'')+' '+(it.title||''),o=[],x=[];
   if(/\b21\+|\b21 and (?:older|over)|aged? 21/i.test(t))x.push({a:'age',v:'18–24'});
   return {ovl:o,excl:x}}
 function hardPull(it){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),brand=($('w_brand').value||'').trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]||'[brand domain TBD]';
-  const comp=domList(h.comp||$('w_cd').value);let enth=domList(h.enth||$('w_ed').value);
+  const comp=domList(h.comp||$('w_cd').value).filter(d=>!isOut(d));let enth=domList(h.enth||$('w_ed').value).filter(d=>!isOut(d));
   if(k==='f'&&brand.indexOf('.')>0&&enth.indexOf(brand)<0)enth.unshift(brand);if(k==='w')enth=enth.filter(d=>d!==brand);
   const x=h.thresh||'2',out=[];
   out.push('Population: US households, active in trailing '+h.look+' days.');
@@ -918,6 +923,25 @@ function hpControls(it,i){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),on
     html+='<label>Hard pull preview</label><pre class="hpprev">'+esc(k?hardPullText(it):'')+'</pre>';
   }
   return html+'</div>'}
+
+/* ---------- broad-site check ---------- */
+const BROAD=new Set(['amazon.com','walmart.com','target.com','ebay.com','costco.com','samsclub.com','bestbuy.com','homedepot.com','lowes.com','kroger.com','walgreens.com','cvs.com','etsy.com','aliexpress.com','temu.com','shein.com','wish.com','craigslist.org','offerup.com','mercari.com','yelp.com','doordash.com','ubereats.com','grubhub.com','postmates.com','instacart.com','uber.com','lyft.com','google.com','bing.com','yahoo.com','facebook.com','instagram.com','tiktok.com','youtube.com','reddit.com','pinterest.com','twitter.com','x.com','linkedin.com','snapchat.com','quora.com','wikipedia.org','msn.com','aol.com','paypal.com','venmo.com','apple.com','microsoft.com','groupon.com','retailmenot.com','slickdeals.net','nextdoor.com','tripadvisor.com','espn.com','cnn.com','nytimes.com']);
+let AIBROAD=[];
+function currentSites(){return [...new Set(domList($('w_cd').value+' '+$('w_ed').value+' '+(W.items||[]).map(i=>(i.hp&&(i.hp.comp+' '+i.hp.enth))||'').join(' ')))]}
+function broadFound(){const b=($('w_brand').value||'').trim().toLowerCase();return currentSites().filter(d=>d!==b&&(BROAD.has(d)||AIBROAD.indexOf(d)>=0))}
+function isOut(d){return !!(W.broad&&W.broad[d]==='out')}
+function renderBroad(){const l=broadFound(),c=$('w_broadcard');if(!c)return;c.style.display=l.length?'':'none';if(!l.length)return;
+  W.broad=W.broad||{};
+  $('w_broadlist').innerHTML=l.map(d=>'<div class="hprow"><b style="min-width:170px">'+esc(d)+'</b><select data-bd="'+esc(d)+'"><option value="">Not decided</option><option value="in"'+(W.broad[d]==='in'?' selected':'')+'>Include in the footprint</option><option value="out"'+(W.broad[d]==='out'?' selected':'')+'>Leave out of the footprint</option></select></div>').join('')}
+$('w_broadlist').addEventListener('change',e=>{const d=e.target.dataset.bd;if(!d)return;W.broad=W.broad||{};if(e.target.value)W.broad[d]=e.target.value;else delete W.broad[d];renderWItems();wAuto()});
+['w_cd','w_ed','w_brand'].forEach(id=>$(id).addEventListener('input',()=>{renderBroad()}));
+async function buildSites(){const text=$('w_text').value.trim(),client=$('w_client').value.trim()||W.client;
+  $('w_status').textContent='Researching and building out competitor and enthusiast sites (about a minute)...';
+  const uc=[...new Set(W.items.filter(i=>i.kind!=='combined').map(i=>i.ucType||i.title))].join(', ');
+  const r=await ai('sites',{client,brand:$('w_brand').value.trim(),useCases:uc,intakeText:text,competitors:$('w_cd').value,enthusiasts:$('w_ed').value});
+  const before=currentSites().length;mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);
+  AIBROAD=(r.broadDomains||[]).map(d=>String(d).toLowerCase().replace(/^www\./,'')).filter(Boolean);
+  const added=currentSites().length-before;$('w_domMsg').textContent='Built out the site lists from the intake form plus category research: '+added+' sites added. Edit as needed.';renderBroad()}
 function renderWItems(){
   W.items.forEach(it=>{if(it.ucType===undefined)it.ucType=guessUC(it)});syncUC();
   $('w_out').style.display=W.items.length?'':'none';
@@ -928,7 +952,7 @@ function renderWItems(){
     '<div class="fld"><label>Write-up</label><textarea data-k="paragraph" rows="5">'+esc(it.paragraph)+'</textarea></div>'+
     (it.kind==='combined'?'':hpControls(it,i))+'<div class="bar"><button class="btn danger sm wdel" data-i="'+i+'">Remove</button></div></div>').join('');
   const un=W.items.filter(it=>it.kind!=='combined'&&!(it.hp&&it.hp.need)).length;
-  $('w_hpnote').style.display=W.items.length&&un?'':'none';$('w_hpnote').innerHTML='<b>Next step:</b> '+un+' use case'+(un===1?'':'s')+' still need an answer to "Does this use case need hard pull rules?" Answer on each write-up below.';
+  renderBroad();$('w_hpnote').style.display=W.items.length&&un?'':'none';$('w_hpnote').innerHTML='<b>Next step:</b> '+un+' use case'+(un===1?'':'s')+' still need an answer to "Does this use case need hard pull rules?" Answer on each write-up below.';
 }
 $('w_items').addEventListener('input',e=>{const wi=e.target.closest('.wi');if(wi&&e.target.dataset.k)W.items[+wi.dataset.i][e.target.dataset.k]=e.target.value;if(e.target.dataset.k==='ucType')syncUC();
   if(!wi)return;const it=W.items[+wi.dataset.i];
@@ -951,7 +975,7 @@ $('w_gen').onclick=async()=>{
   if(text.length<20){$('w_err').textContent='Drop in an intake form or paste its text first.';return}
   $('w_gen').disabled=true;$('w_status').textContent='Drafting (about 30 seconds)...';
   try{const r=await ai('writeups',{intakeText:text,combined:$('w_comb').checked});
-    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||''};if(!$('w_geo').value.trim()&&r.geo)$('w_geo').value=r.geo;if(!$('w_camp').value.trim()&&r.campaign)$('w_camp').value=r.campaign;fillDomains(text);mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);{const have=($('w_cd').value+' '+$('w_ed').value).toLowerCase();const ex=extractDoms((r.items||[]).map(i=>i.paragraph).join(' ')).split(', ').filter(d=>d&&have.indexOf(d)<0);if(ex.length){mergeList('w_ed',ex);$('w_domMsg').textContent+=' Added '+ex.length+' domains named in the drafted write-ups to the enthusiast list.'}}renderWItems();await saveW(true);$('w_status').textContent=W.items.length+' write-ups drafted and saved. Next: on each write-up, say whether it needs hard pull rules.'}
+    W={id:W.id||uid(),client:$('w_client').value.trim()||r.client||'Client',items:r.items||[],geo:r.geo||'',broad:W.broad||{}};if(!$('w_geo').value.trim()&&r.geo)$('w_geo').value=r.geo;if(!$('w_camp').value.trim()&&r.campaign)$('w_camp').value=r.campaign;fillDomains(text);mergeList('w_cd',r.competitorDomains);mergeList('w_ed',r.enthusiastDomains);{const have=($('w_cd').value+' '+$('w_ed').value).toLowerCase();const ex=extractDoms((r.items||[]).map(i=>i.paragraph).join(' ')).split(', ').filter(d=>d&&have.indexOf(d)<0);if(ex.length){mergeList('w_ed',ex);$('w_domMsg').textContent+=' Added '+ex.length+' domains named in the drafted write-ups to the enthusiast list.'}}renderWItems();try{await buildSites()}catch(e2){$('w_domMsg').textContent+=' Could not build out more sites ('+(e2.message||e2)+'). If this says Unknown task, rerun Deploy Back End.command.'}renderWItems();await saveW(true);$('w_status').textContent=W.items.length+' write-ups drafted and saved. Next: on each write-up, say whether it needs hard pull rules.'}
   catch(e){$('w_err').textContent=e.message||String(e);$('w_status').textContent=''}
   $('w_gen').disabled=false;
 };
@@ -960,11 +984,13 @@ function docHead(c){const ind=W.items.filter(i=>i.kind!=='combined'),nm=['','One
   const line='Client: '+c+'  |  Campaign: '+v('w_camp')+'  |  Flight: '+v('w_flight')+'  |  Geo: '+(($('w_geo').value||W.geo||'').trim()||'National')+'  |  Sales Planner: '+v('w_planner')+'  |  Sales Manager: '+v('w_mgr')+'  |  Priority: '+v('w_prio')+'  |  Due: '+due+'.';
   const list=lab.length>1?lab.slice(0,-1).join(', ')+(lab.length>2?',':'')+' and '+lab[lab.length-1]:lab[0]||'';
   return {title:c+' — Data Pull',sub:line+(ind.length?'\n'+(nm[ind.length]||ind.length)+' use case'+(ind.length===1?'':'s')+': '+list+'.':'')}}
+$('w_sites').onclick=async()=>{$('w_err').textContent='';$('w_sites').disabled=true;try{await buildSites();await saveW(true)}catch(e){$('w_err').textContent=e.message||String(e)}$('w_sites').disabled=false};
 $('w_dl').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';
   const un=W.items.filter(it=>it.kind!=='combined'&&!(it.hp&&it.hp.need)).length;
   if(un&&!window.confirm(un+' use case'+(un===1?' has':'s have')+' not been answered for hard pull rules, so they will download as embeddings only. Download anyway?'))return;
+  const ub=broadFound().filter(d=>!(W.broad&&W.broad[d]));if(ub.length&&!window.confirm(ub.length+' broad site'+(ub.length===1?'':'s')+' (' + ub.slice(0,6).join(', ')+(ub.length>6?', ...':'')+') have not been decided and will be included in the footprint. They can skew results. Download anyway?'))return;
   const b=await makeDocx(W.items,docHead(c));download(safe(c)+' Data Pull.docx',b)};
-async function saveW(auto){const c=$('w_client').value.trim()||W.client||'Client';W.id=W.id||uid();const old=store.writeups.find(x=>x.id===W.id);await db.put('writeups',{id:W.id,client:c,items:W.items,geo:W.geo,req:reqObj(),doms:allDoms()+($('w_brand').value.trim()?', '+$('w_brand').value.trim().toLowerCase():''),cdoms:$('w_cd').value.trim(),edoms:$('w_ed').value.trim(),by:who(),created:old?old.created:Date.now(),updated:Date.now()});$('w_status').textContent=auto?'Intake read and saved automatically. The Prioritize page will find it when you type the client name.':'Saved. It is now available on the Prioritize page.'}
+async function saveW(auto){const c=$('w_client').value.trim()||W.client||'Client';W.id=W.id||uid();const old=store.writeups.find(x=>x.id===W.id);await db.put('writeups',{id:W.id,client:c,items:W.items,geo:W.geo,broad:W.broad||{},req:reqObj(),doms:allDoms()+($('w_brand').value.trim()?', '+$('w_brand').value.trim().toLowerCase():''),cdoms:$('w_cd').value.trim(),edoms:$('w_ed').value.trim(),by:who(),created:old?old.created:Date.now(),updated:Date.now()});$('w_status').textContent=auto?'Intake read and saved automatically. The Prioritize page will find it when you type the client name.':'Saved. It is now available on the Prioritize page.'}
 $('w_save').onclick=()=>saveW(false);
 
 function renderWSaved(){
@@ -972,7 +998,7 @@ function renderWSaved(){
   $('w_saved').innerHTML=l.length?l.map(w=>'<div class="saved"><div class="grow"><b>'+esc(w.client)+'</b> <span class="note">'+w.items.length+' write-ups &middot; '+esc(w.by||'')+' &middot; '+new Date(w.updated||w.created).toLocaleDateString()+'</span></div><button class="btn sec sm wopen" data-id="'+w.id+'">Open</button><button class="btn danger sm wrm" data-id="'+w.id+'">Delete</button></div>').join(''):'<div class="note">Nothing saved yet.</div>';
 }
 $('w_saved').addEventListener('click',async e=>{const id=e.target.dataset.id;if(!id)return;
-  if(e.target.classList.contains('wopen')){const w=store.writeups.find(x=>x.id===id);W={id:w.id,client:w.client,items:JSON.parse(JSON.stringify(w.items)),geo:w.geo||''};$('w_client').value=w.client;setReq(w.req);$('w_cd').value=w.cdoms||'';$('w_ed').value=w.edoms||(w.cdoms?'':w.doms||'');renderWItems();window.scrollTo({top:0,behavior:'smooth'})}
+  if(e.target.classList.contains('wopen')){const w=store.writeups.find(x=>x.id===id);W={id:w.id,client:w.client,items:JSON.parse(JSON.stringify(w.items)),geo:w.geo||'',broad:w.broad||{}};$('w_client').value=w.client;setReq(w.req);$('w_cd').value=w.cdoms||'';$('w_ed').value=w.edoms||(w.cdoms?'':w.doms||'');renderWItems();window.scrollTo({top:0,behavior:'smooth'})}
   if(e.target.classList.contains('wrm')){if(e.target.dataset.arm==='1')await db.del('writeups',id);else{e.target.dataset.arm='1';e.target.textContent='Confirm?';setTimeout(()=>{e.target.dataset.arm='';e.target.textContent='Delete'},3000)}}});
 
 /* ---------- Decks ---------- */
