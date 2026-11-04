@@ -773,7 +773,8 @@ async function makeDocx(items,head){
     b+=para(run(it.category,{b:1,sz:22}),{after:80});
     b+=para(run(it.audienceName,{b:1})+run(' — '+it.paragraph),{after:160,bullet:1});
     if(it.hp&&it.hp.need==='yes'&&it.kind!=='combined'){
-      b+=para(run('HARD PULL',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
+      b+=para(run('HARD PULL — APPLIED AFTER EMBEDDINGS',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
+      b+=para(run('Apply these rules only after the embeddings above have been pulled; they narrow the embeddings audience.'),{after:160});
       hardPull(it).forEach(l=>{b+=Array.isArray(l)?l.map(x=>para(run('•  '+x),{after:40})).join('')+para('',{after:80}):para(run(l),{after:160})});
     }
     if(it.kind!=='combined'){const rs=refSites(it);
