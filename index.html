@@ -762,7 +762,7 @@ async function docxText(file){
   return out.join('\n');
 }
 const FONT='<w:rFonts w:ascii="Calibri" w:eastAsia="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>';
-function run(t,o){o=o||{};return '<w:r><w:rPr>'+FONT+(o.b?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'<w:sz w:val="'+(o.sz||22)+'"/></w:rPr><w:t xml:space="preserve">'+xmlEsc(t)+'</w:t></w:r>'}
+function run(t,o){o=o||{};return '<w:r><w:rPr>'+FONT+(o.b?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'<w:sz w:val="'+(o.sz||22)+'"/>'+(o.u?'<w:u w:val="single"/>':'')+'</w:rPr><w:t xml:space="preserve">'+xmlEsc(t)+'</w:t></w:r>'}
 function para(runs,o){o=o||{};return '<w:p><w:pPr>'+(o.bullet?'<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>':'')+(o.shade?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shade+'"/>':'')+'<w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?120:o.after)+'"/>'+(o.bullet?'<w:ind w:left="360" w:hanging="360"/>':'')+'</w:pPr>'+runs+'</w:p>'}
 async function makeDocx(items,head){
   let b=para(run(head.title,{b:1,sz:32}),{after:60});
@@ -774,7 +774,7 @@ async function makeDocx(items,head){
     b+=para(run(it.audienceName,{b:1})+run(' — '+it.paragraph),{after:160,bullet:1});
     if(it.hp&&it.hp.need==='yes'&&it.kind!=='combined'){
       b+=para(run('HARD PULL — APPLIED AFTER EMBEDDINGS',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
-      b+=para(run('Apply these rules only after the embeddings above have been pulled; they narrow the embeddings audience.'),{after:160});
+      b+=para(run('Apply these rules only after the embeddings above have been pulled; they narrow the embeddings audience.',{b:1,u:1}),{after:160});
       hardPull(it).forEach(l=>{b+=Array.isArray(l)?l.map(x=>para(run('•  '+x),{after:40})).join('')+para('',{after:80}):para(run(l),{after:160})});
     }
     if(it.kind!=='combined'){const rs=refSites(it);
