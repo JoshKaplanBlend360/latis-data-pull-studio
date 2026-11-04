@@ -101,6 +101,7 @@ tr.over-bot td{box-shadow:inset 0 -3px 0 #C0895E}
 table.qt tbody tr{cursor:default}
 
 .hp{margin-top:12px;padding:12px;border:1px solid #E4D7C6;border-radius:8px;background:#FAF5EE}.hpq{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;font-size:13px}.hpprev{white-space:pre-wrap;font:12px/1.5 Arial,sans-serif;background:#fff;border:1px solid #E4D7C6;border-radius:6px;padding:10px;margin:4px 0 0}
+.hpsec{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#C0895E;margin:14px 0 4px}.hprow{display:flex;gap:8px;align-items:center;margin-bottom:6px}.hprow select{flex:1.3}.hprow input{flex:1}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -755,9 +756,9 @@ async function docxText(file){
   xml.split('</w:p>').forEach(p=>{const t=decodeEnt((p.match(/<w:t(?: [^>]*)?>[^<]*<\/w:t>|<w:tab\/>/g)||[]).map(m=>m==='<w:tab/>'?'\t':m.replace(/<[^>]+>/g,'')).join('')).trim();if(t&&!seen.has(t)){seen.add(t);out.push(t)}});
   return out.join('\n');
 }
-const FONT='<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>';
+const FONT='<w:rFonts w:ascii="Calibri" w:eastAsia="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>';
 function run(t,o){o=o||{};return '<w:r><w:rPr>'+FONT+(o.b?'<w:b/>':'')+(o.color?'<w:color w:val="'+o.color+'"/>':'')+'<w:sz w:val="'+(o.sz||22)+'"/></w:rPr><w:t xml:space="preserve">'+xmlEsc(t)+'</w:t></w:r>'}
-function para(runs,o){o=o||{};return '<w:p><w:pPr>'+(o.shade?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shade+'"/>':'')+'<w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?120:o.after)+'"/></w:pPr>'+runs+'</w:p>'}
+function para(runs,o){o=o||{};return '<w:p><w:pPr>'+(o.bullet?'<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>':'')+(o.shade?'<w:shd w:val="clear" w:color="auto" w:fill="'+o.shade+'"/>':'')+'<w:spacing w:before="'+(o.before||0)+'" w:after="'+(o.after==null?120:o.after)+'"/>'+(o.bullet?'<w:ind w:left="360" w:hanging="360"/>':'')+'</w:pPr>'+runs+'</w:p>'}
 async function makeDocx(items,head){
   let b=para(run(head.title,{b:1,sz:32}),{after:60});
   if(head.sub)b+=head.sub.split('\n').map((l,i,a)=>para(run(l,{sz:20,color:'6F6355'}),{after:i===a.length-1?240:60})).join('');
@@ -765,7 +766,7 @@ async function makeDocx(items,head){
     b+=para(run(it.title,{b:1,sz:26}),{before:i?120:0,after:80});
     b+=para(run('EMBEDDINGS WRITE-UP',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
     b+=para(run(it.category,{b:1,sz:22}),{after:80});
-    b+=para(run(it.audienceName,{b:1})+run(' — '+it.paragraph),{after:160});
+    b+=para(run(it.audienceName,{b:1})+run(' — '+it.paragraph),{after:160,bullet:1});
     if(it.hp&&it.hp.need==='yes'&&it.kind!=='combined'){
       b+=para(run('HARD PULL',{b:1,sz:18,color:'1F3864'}),{shade:'E8EEF7',after:100});
       hardPull(it).forEach(l=>{b+=Array.isArray(l)?l.map(x=>para(run('•\t'+x),{after:40})).join('')+para('',{after:80}):para(run(l),{after:160})});
@@ -773,8 +774,10 @@ async function makeDocx(items,head){
     b+=para(run('----------------------------------------',{color:'A99A89'}),{after:160});
   });
   const z=new JSZip();
-  z.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  z.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/></Types>');
   z.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  z.file('word/numbering.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="hybridMultilevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="bullet"/><w:lvlText w:val="•"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="360" w:hanging="360"/></w:pPr><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/></w:rPr></w:lvl></w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num></w:numbering>');
+  z.file('word/_rels/document.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/></Relationships>');
   z.file('word/document.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+b+'<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>');
   return z.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
 }
@@ -851,49 +854,66 @@ function guessUC(it){const t=((it.title||'')+' '+(it.audienceName||'')).toLowerC
 function syncUC(){const t=W.items.map(i=>i.ucType);if(t.indexOf('Conquesting')>=0)$('w_uc_c').checked=true;if(t.indexOf('Win Back')>=0)$('w_uc_w').checked=true;if(t.indexOf('Find Customers')>=0)$('w_uc_f').checked=true;if(t.indexOf('Custom')>=0)$('w_uc_x').checked=true}
 
 /* ---------- hard pull rules ---------- */
-const HPD={need:'',look:'60',nb:'60',prior:'30',thresh:'2',comp:'',enth:'',channels:'',shows:'',hours:'5',ovl:'',ovlMode:'all',extra:''};
+const HPD={need:'',look:'60',nb:'60',prior:'30',thresh:'2',comp:'',enth:'',channels:'',streams:'',shows:'',hours:'5',ovlMode:'any',extra:''};
+const ATTR={age:['Head-of-household age band','hhagedesc'],income:['Household income','estimatedincome'],male:['Male-headed household composition','fmlycmposdesc'],hhsize:['Household size','hhsizedesc'],own:['Home ownership','hmowndesc'],fam:['Family composition','fmlycmposdesc'],homeval:['Home value','homeval'],resid:['Length of residence','lgthofrsdncd'],urban:['Urban / rural classification','urbncitydtldesc']};
+const DICT=' (Dim SvcUnit Demog Hist)';
 function domList(v){return [...new Set(String(v||'').split(/[\s,;]+/).map(d=>d.trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]).filter(d=>d.indexOf('.')>0))]}
 function ucKey(it){return it.ucType==='Conquesting'?'c':it.ucType==='Win Back'?'w':it.ucType==='Find Customers'||it.ucType==='Custom'?'f':''}
+function ovlLine(r){const m=ATTR[r.a]||ATTR.age;if(r.a==='male')return 'Male-headed household composition, via the fmlycmposdesc field'+DICT+' — a partial male-skew indicator only';return m[0]+(r.v?' '+r.v:'')+', via the '+m[1]+' field'+DICT}
+function exclLine(r){const m=ATTR[r.a]||ATTR.age;let t='Exclude households where the '+m[0].toLowerCase()+' is '+(r.v||'[value]')+', via the '+m[1]+' field'+DICT;if(r.a==='age'&&/18\s*[–-]\s*24/.test(r.v||''))t+=', as a conservative proxy for the under-21 exclusion — the age field is banded and cannot isolate under-21 households exactly';return t+'.'}
+function guessHP(it){const t=(it.paragraph||'')+' '+(it.title||''),o=[],x=[];
+  let m=t.match(/(\d{2})\s*[–-]\s*(\d{2})/);if(m&&+m[1]>=18&&+m[2]<=80&&+m[2]>+m[1])o.push({a:'age',v:m[1]+'–'+m[2]});
+  m=t.match(/\$\s?(\d{2,3})\s?K\+?/i);if(m&&/(income|HHI)/i.test(t))o.push({a:'income',v:'of roughly $'+m[1]+'K and above'});
+  if(/\bmales?\b|\bmen\b/i.test(t))o.push({a:'male',v:''});
+  if(/\b21\+|\b21 and (?:older|over)|aged? 21/i.test(t))x.push({a:'age',v:'18–24'});
+  return {ovl:o,excl:x}}
 function hardPull(it){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),brand=($('w_brand').value||'').trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]||'[brand domain TBD]';
   const comp=domList(h.comp||$('w_cd').value);let enth=domList(h.enth||$('w_ed').value);
   if(k==='f'&&brand.indexOf('.')>0&&enth.indexOf(brand)<0)enth.unshift(brand);if(k==='w')enth=enth.filter(d=>d!==brand);
   const x=h.thresh||'2',out=[];
-  out.push('Population: US clients, active in trailing '+h.look+' days.');
+  out.push('Population: US households, active in trailing '+h.look+' days.');
   if(k==='c')out.push('Confirm zero DNS activity to brand domain ('+brand+') in the last '+h.nb+' days.');
   if(k==='w')out.push('Confirm zero DNS activity to brand domain ('+brand+') in the last '+h.nb+' days, with prior engagement with the brand confirmed '+h.prior+'+ days before that.');
   if(k!=='c'&&enth.length)out.push('Count enthusiast-site visits (from enthusiast domain list'+(k==='f'?', brand included':k==='w'?', brand excluded':'')+'): '+enth.join(', '));
   if(comp.length)out.push('Count competitor-site visits (from competitor domain list): '+comp.join(', '));
-  const shows=String(h.shows||'').split(/[,\n;]+/).map(t=>t.trim()).filter(Boolean),ch=String(h.channels||'').split(/[,\n;]+/).map(t=>t.trim()).filter(Boolean);
+  const sp=v=>String(v||'').split(/[,\n;]+/).map(t=>t.trim()).filter(Boolean),shows=sp(h.shows),ch=sp(h.channels),st=sp(h.streams);
   if(shows.length)out.push('Count named-show viewing occurrences, each ≥30 minutes in a single sitting (from Quantum Viewership: content_title; and VOD Viewing Stream: title_asset_name/content_asset_name as a best-effort secondary source): '+shows.join(', '));
   if(ch.length)out.push('Count TV channel hours watched (from channel list): '+ch.join(', '));
+  if(st.length)out.push('Count IPTV/streaming hours watched (from streaming domain list): '+st.join(', '));
   String(h.extra||'').split('\n').map(t=>t.trim()).filter(Boolean).forEach(t=>out.push(t));
-  const kp=[];if(k!=='c'&&enth.length)kp.push('enthusiast-site visits ≥'+x+'x');if(comp.length)kp.push('competitor-site visits ≥'+x+'x');if(shows.length)kp.push('named-show viewing occurrence ≥30 minutes');if(ch.length)kp.push('TV channel hours watched ≥'+(h.hours||'5'));
+  const hrs=h.hours||'5',kp=[];if(k!=='c'&&enth.length)kp.push('enthusiast-site visits ≥'+x+'x');if(comp.length)kp.push('competitor-site visits ≥'+x+'x');if(shows.length)kp.push('named-show viewing occurrence ≥30 minutes');if(ch.length)kp.push('channel hours watched ≥'+hrs);if(st.length)kp.push('streaming hours watched ≥'+hrs);
   if(kp.length)out.push('Keep pairs where '+kp.join(' OR ')+'.');
-  const ov=String(h.ovl||'').split('\n').map(t=>t.trim()).filter(Boolean);
-  if(ov.length){out.push('Overlay household attributes ('+(h.ovlMode==='any'?'at least one of these conditions':'all of these conditions')+'):');out.push(ov)}
+  (h.excl||[]).forEach(r=>out.push(exclLine(r)));
+  const ov=(h.ovl||[]).map(ovlLine);
+  if(ov.length){out.push('Overlay household attributes ('+(h.ovlMode==='all'?'all of these conditions':'at least one of these conditions')+'):');out.push(ov)}
   out.push('Geo: '+(($('w_geo').value||W.geo||'US').trim()));
   out.push('Parameters: Total no. of households');
   return out}
 function hardPullText(it){return hardPull(it).map(l=>Array.isArray(l)?l.map(x=>'•  '+x).join('\n'):l).join('\n\n')}
+function attrSel(key,ri,rk,val){return '<select data-r="'+key+'" data-ri="'+ri+'" data-rk="'+rk+'">'+Object.keys(ATTR).map(k=>'<option value="'+k+'"'+(val===k?' selected':'')+'>'+ATTR[k][0]+' ('+ATTR[k][1]+')</option>').join('')+'</select>'}
+function rowsHtml(key,rows,ph){return (rows||[]).map((r,ri)=>'<div class="hprow">'+attrSel(key,ri,'a',r.a)+(r.a==='male'?'<span class="note" style="flex:1">no value needed</span>':'<input data-r="'+key+'" data-ri="'+ri+'" data-rk="v" value="'+esc(r.v||'')+'" placeholder="'+esc(ph)+'">')+'<button class="btn danger sm" data-act="del'+key+'" data-ri="'+ri+'">Remove</button></div>').join('')}
 function hpControls(it,i){const h=Object.assign({},HPD,it.hp||{}),k=ucKey(it),on=h.need==='yes';
-  const inp=(key,lab,ph,w)=>'<div'+(w?' class="'+w+'"':'')+'><label>'+lab+'</label><input data-h="'+key+'" value="'+esc(h[key])+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+'></div>';
+  const inp=(key,lab,ph)=>'<div><label>'+lab+'</label><input data-h="'+key+'" value="'+esc(h[key])+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+'></div>';
   const ta=(key,lab,ph,r)=>'<div class="fld"><label>'+lab+'</label><textarea data-h="'+key+'" rows="'+(r||2)+'" placeholder="'+esc(ph||'')+'">'+esc(h[key])+'</textarea></div>';
-  let html='<div class="hp"><div class="hpq"><b>Does this use case need hard pull rules?</b> Embeddings are drafted above. Hard pull rules (for example no brand-site activity for a set period, or engaged then left) are added to the write-up in our standard format.'+
+  let html='<div class="hp"><div class="hpq"><b>Does this use case need hard pull rules?</b> The embeddings are drafted above. If yes, set the rules here and they are added to the write-up after the embeddings, in our standard hard pull format. If no, the write-up is embeddings only.'+
    '<select data-h="need"><option value="">Not answered yet</option><option value="no"'+(h.need==='no'?' selected':'')+'>No, embeddings only</option><option value="yes"'+(on?' selected':'')+'>Yes, add hard pull rules</option></select></div>';
   if(on){
     if(!k)html+='<div class="msg err" style="display:block">Set the use case type above (Conquesting, Win Back, Find Customers or Custom) so the right rules are built.</div>';
     else{
-      html+='<div class="frm">'+inp('look','Active in trailing (days)','60');
+      html+='<div class="hpsec">Timing rules</div><div class="frm">'+inp('look','Active in trailing (days)','60');
       if(k==='c')html+=inp('nb','No activity on the brand site for (days)','60');
-      if(k==='w'){html+=inp('nb','No activity on the brand site for (days)','60')+inp('prior','Was engaged with the brand, confirmed (days) before that','30')}
-      html+=inp('thresh','Keep households with visits of at least (x)','2')+'</div>';
-      html+='<div class="hint">'+(k==='c'?'Conquesting: households visiting competitor sites with no recent activity on the brand site.':k==='w'?'Win Back: households that were visiting the brand site, then went quiet for the period above, and are active in the category elsewhere.':'Find Customers: category enthusiasts and competitor shoppers; the brand site is included.')+(($('w_brand').value||'').trim()?' Brand domain: '+esc($('w_brand').value.trim())+'.':' Add the brand domain in Request details first.')+'</div>';
-      html+=ta('comp','Competitor sites for this use case','Leave blank to use the competitor sites above',2);
+      if(k==='w')html+=inp('nb','No activity on the brand site for (days)','60')+inp('prior','Was engaged with the brand, confirmed (days) before that','30');
+      html+=inp('thresh','Keep households with site visits of at least (x)','2')+'</div>';
+      html+='<div class="hint">'+(k==='c'?'Conquesting: households visiting competitor sites with no recent activity on the brand site.':k==='w'?'Win Back: households that were visiting the brand site, then left for the period above, and are active in the category elsewhere.':'Find Customers: category enthusiasts and competitor shoppers; the brand site is included.')+(($('w_brand').value||'').trim()?' Brand domain: '+esc($('w_brand').value.trim())+'.':' Add the brand domain in Request details first.')+'</div>';
+      html+='<div class="hpsec">Sites</div>'+ta('comp','Competitor sites for this use case','Leave blank to use the competitor sites above',2);
       if(k!=='c')html+=ta('enth','Enthusiast sites for this use case','Leave blank to use the enthusiast sites above',2);
-      html+='<div class="row2">'+'<div><label>Named shows (optional)</label><input data-h="shows" value="'+esc(h.shows)+'" placeholder="e.g. Shark Tank, Property Brothers"></div><div><label>TV channels (optional)</label><input data-h="channels" value="'+esc(h.channels)+'" placeholder="e.g. HGTV, Food Network"></div></div>';
-      html+=ta('ovl','Household attributes to overlay (one per line, optional)','e.g. Head of household age 25-44 (hhagedesc)\nHousehold income $150,000 or more (estimatedincome)',3);
-      html+='<div class="fld"><label>Overlay applies when</label><select data-h="ovlMode"><option value="all"'+(h.ovlMode!=='any'?' selected':'')+'>All of these conditions</option><option value="any"'+(h.ovlMode==='any'?' selected':'')+'>At least one of these conditions</option></select></div>';
+      html+='<div class="hpsec">TV and streaming (optional)</div><div class="row2"><div><label>Named shows</label><input data-h="shows" value="'+esc(h.shows)+'" placeholder="e.g. Monday Night Football, College GameDay"></div><div><label>TV channels</label><input data-h="channels" value="'+esc(h.channels)+'" placeholder="e.g. ESPN, FS1, NFL Network"></div></div>';
+      html+='<div class="row2"><div><label>Streaming services</label><input data-h="streams" value="'+esc(h.streams)+'" placeholder="e.g. YouTube TV, Fubo, Peacock"></div>'+inp('hours','Channel / streaming hours watched at least','5')+'</div>';
+      html+='<div class="hpsec">Exclusions</div>'+rowsHtml('excl',h.excl,'e.g. 18–24')+'<div class="bar"><button class="btn sec sm" data-act="addexcl">+ Add exclusion</button><button class="btn sec sm" data-act="u21">Exclude under 21 (18–24 proxy)</button></div>';
+      html+='<div class="hpsec">Household overlay</div>'+rowsHtml('ovl',h.ovl,'e.g. 25–54 or of roughly $75K and above')+'<div class="bar"><button class="btn sec sm" data-act="addovl">+ Add overlay attribute</button><select data-h="ovlMode" style="max-width:260px"><option value="any"'+(h.ovlMode!=='all'?' selected':'')+'>At least one of these conditions</option><option value="all"'+(h.ovlMode==='all'?' selected':'')+'>All of these conditions</option></select></div>';
+      html+='<div class="hint">Attributes come from the Charter data dictionary. There is no direct gender field; male-headed composition is a partial indicator only.</div>';
       html+=ta('extra','Any other hard pull rules (one per line, optional)','Each line is added as its own step before the keep-pairs rule',2);
+      html+='<div class="bar"><button class="btn sec sm" data-act="copyall">Copy these rules to the other use cases</button></div>';
     }
     html+='<label>Hard pull preview</label><pre class="hpprev">'+esc(k?hardPullText(it):'')+'</pre>';
   }
@@ -911,9 +931,21 @@ function renderWItems(){
   $('w_hpnote').style.display=W.items.length&&un?'':'none';$('w_hpnote').innerHTML='<b>Next step:</b> '+un+' use case'+(un===1?'':'s')+' still need an answer to "Does this use case need hard pull rules?" Answer on each write-up below.';
 }
 $('w_items').addEventListener('input',e=>{const wi=e.target.closest('.wi');if(wi&&e.target.dataset.k)W.items[+wi.dataset.i][e.target.dataset.k]=e.target.value;if(e.target.dataset.k==='ucType')syncUC();
-  if(wi&&e.target.dataset.h){const it=W.items[+wi.dataset.i];it.hp=Object.assign({},HPD,it.hp||{});it.hp[e.target.dataset.h]=e.target.value;if(e.target.dataset.h!=='need'){const pv=wi.querySelector('.hpprev');if(pv)pv.textContent=ucKey(it)?hardPullText(it):''}}});
-$('w_items').addEventListener('change',e=>{const wi=e.target.closest('.wi');if(!wi)return;if(e.target.dataset.h==='need'||e.target.dataset.k==='ucType'){renderWItems();wAuto()}});
-$('w_items').addEventListener('click',e=>{if(e.target.classList.contains('wdel')){W.items.splice(+e.target.dataset.i,1);renderWItems()}});
+  if(!wi)return;const it=W.items[+wi.dataset.i];
+  if(e.target.dataset.h||e.target.dataset.r){it.hp=Object.assign({},HPD,it.hp||{});
+    if(e.target.dataset.h)it.hp[e.target.dataset.h]=e.target.value;
+    else{const key=e.target.dataset.r;it.hp[key][+e.target.dataset.ri][e.target.dataset.rk]=e.target.value;if(e.target.dataset.rk==='a')renderWItems()}
+    if(e.target.dataset.h!=='need'){const pv=wi.querySelector('.hpprev');if(pv)pv.textContent=ucKey(it)?hardPullText(it):''}}});
+$('w_items').addEventListener('change',e=>{const wi=e.target.closest('.wi');if(!wi)return;const it=W.items[+wi.dataset.i];
+  if(e.target.dataset.h==='need'){if(e.target.value==='yes'&&it.hp&&!(it.hp.ovl&&it.hp.ovl.length)&&!(it.hp.excl&&it.hp.excl.length)&&!it.hp.init){const g=guessHP(it);it.hp.ovl=g.ovl;it.hp.excl=g.excl;it.hp.init=1}renderWItems();wAuto()}
+  else if(e.target.dataset.k==='ucType'){renderWItems();wAuto()}});
+$('w_items').addEventListener('click',e=>{if(e.target.classList.contains('wdel')){W.items.splice(+e.target.dataset.i,1);renderWItems();return}
+  const act=e.target.dataset.act,wi=e.target.closest('.wi');if(!act||!wi)return;const it=W.items[+wi.dataset.i];it.hp=Object.assign({},HPD,it.hp||{});it.hp.ovl=it.hp.ovl||[];it.hp.excl=it.hp.excl||[];
+  if(act==='addovl')it.hp.ovl.push({a:'age',v:''});if(act==='addexcl')it.hp.excl.push({a:'age',v:''});
+  if(act==='u21'&&!it.hp.excl.some(r=>r.a==='age'&&/18/.test(r.v)))it.hp.excl.push({a:'age',v:'18–24'});
+  if(act==='delovl')it.hp.ovl.splice(+e.target.dataset.ri,1);if(act==='delexcl')it.hp.excl.splice(+e.target.dataset.ri,1);
+  if(act==='copyall'){const src=JSON.parse(JSON.stringify(it.hp));W.items.forEach(o=>{if(o!==it&&o.kind!=='combined')o.hp=Object.assign({},JSON.parse(JSON.stringify(src)),{need:'yes',init:1})})}
+  renderWItems();wAuto()});
 $('w_gen').onclick=async()=>{
   const text=$('w_text').value.trim();$('w_err').textContent='';
   if(text.length<20){$('w_err').textContent='Drop in an intake form or paste its text first.';return}
@@ -924,9 +956,10 @@ $('w_gen').onclick=async()=>{
   $('w_gen').disabled=false;
 };
 function docHead(c){const ind=W.items.filter(i=>i.kind!=='combined'),nm=['','One','Two','Three','Four','Five','Six','Seven','Eight'],lab=ind.map(i=>({'Conquesting':'Conquest'}[i.ucType]||i.ucType||(i.title||'').split(/\s+[—-]\s+/)[0]||'Custom'));
-  const parts=[['Client',c],['Campaign',$('w_camp').value.trim()],['Flight',$('w_flight').value.trim()],['Geo',($('w_geo').value||W.geo||'').trim()],['Planner',$('w_planner').value.trim()],['Manager',$('w_mgr').value.trim()]].filter(p=>p[1]).map(p=>p[0]+': '+p[1]).join('  |  ');
+  const v=id=>($(id).value||'').trim()||'N/A',due=(()=>{const d=$('w_due').value;if(!d)return 'N/A';const p=d.split('-');return +p[1]+'/'+(+p[2])+'/'+p[0]})();
+  const line='Client: '+c+'  |  Campaign: '+v('w_camp')+'  |  Flight: '+v('w_flight')+'  |  Geo: '+(($('w_geo').value||W.geo||'').trim()||'National')+'  |  Sales Planner: '+v('w_planner')+'  |  Sales Manager: '+v('w_mgr')+'  |  Priority: '+v('w_prio')+'  |  Due: '+due+'.';
   const list=lab.length>1?lab.slice(0,-1).join(', ')+(lab.length>2?',':'')+' and '+lab[lab.length-1]:lab[0]||'';
-  return {title:c+' Data Pull',sub:parts+(ind.length?'\n':'')+(ind.length?(nm[ind.length]||ind.length)+' use case'+(ind.length===1?'':'s')+': '+list+'.':'')}}
+  return {title:c+' — Data Pull',sub:line+(ind.length?'\n'+(nm[ind.length]||ind.length)+' use case'+(ind.length===1?'':'s')+': '+list+'.':'')}}
 $('w_dl').onclick=async()=>{const c=$('w_client').value.trim()||W.client||'Client';
   const un=W.items.filter(it=>it.kind!=='combined'&&!(it.hp&&it.hp.need)).length;
   if(un&&!window.confirm(un+' use case'+(un===1?' has':'s have')+' not been answered for hard pull rules, so they will download as embeddings only. Download anyway?'))return;
