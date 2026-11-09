@@ -425,22 +425,24 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
     return xml.replace(/\{([A-Za-z0-9]+)\}/g, (m, k) => (k in tok ? esc(tok[k]) : m));
   }
 
-  function build(c, ctx) {
+  // order: array of slide part paths in presentation order (position 1 = first slide)
+  function build(c, ctx, order) {
     const V = c.vertical;
     const files = {};
+    const F = (pos) => order ? order[pos - 1] : "ppt/slides/slide" + pos + ".xml";
     // slide1 cover
-    files["ppt/slides/slide1.xml"] = (x) => patchText(x, { 1: V + " vertical" });
+    files[F(1)] = (x) => patchText(x, { 1: V + " vertical" });
     // slide5 divider
-    files["ppt/slides/slide5.xml"] = (x) => patchText(x, { 1: "Latis + " + V });
+    files[F(8)] = (x) => patchText(x, { 1: "Latis + " + V });
     // slide8 journey
-    files["ppt/slides/slide8.xml"] = (x) => {
+    files[F(9)] = (x) => {
       const m = { 0: c.journey.title, 1: c.journey.curveLabel, 40: (t) => t.replace(/^\S+/, c.journey.daysText) };
       const D = [9, 13, 17, 21, 25, 29, 34];
       c.journey.cols.forEach((col, i) => { m[D[i]] = col.day; m[D[i] + 1] = col.desc; m[D[i] + 2] = col.feature; });
       return patchText(x, m);
     };
     // slide9 journey -> audiences
-    files["ppt/slides/slide9.xml"] = (x) => {
+    files[F(10)] = (x) => {
       const m = { 2: (t) => t.replace(/automotive/i, lc(V)) };
       const D = [3, 6, 9, 12, 15, 18, 21];
       c.map.days.forEach((d, i) => { m[D[i]] = c.journey.cols[i].day; m[D[i] + 1] = d; });
@@ -453,7 +455,7 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
       return patchText(x, m);
     };
     // slide10 third-party comparison
-    files["ppt/slides/slide10.xml"] = (x) => {
+    files[F(11)] = (x) => {
       const t = c.third, m = { 0: t.eyebrow, 1: t.title, 40: t.footnote };
       t.cols.forEach((col, i) => {
         m[4 + 2 * i] = col.name; m[5 + 2 * i] = col.sub;
@@ -462,12 +464,12 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
       return patchText(x, m);
     };
     // slide11 footprint
-    files["ppt/slides/slide11.xml"] = (x) => {
+    files[F(12)] = (x) => {
       const f = c.footprint;
       return patchText(x, { 1: V + "'s signal footprint on ", 7: f.intentLabel, 8: f.intentDesc, 10: f.winLabel, 11: f.winDesc });
     };
     // slide13 feature-store journeys
-    files["ppt/slides/slide13.xml"] = (x) => {
+    files[F(14)] = (x) => {
       const J = ctx.journeys.slice(0, 8), n = J.length;
       const m = {
         1: V + " journeys, pre-built on the Latis Feature Store",
@@ -484,13 +486,17 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
       return n < 8 ? removeCards(out, n) : out;
     };
     // slide14 use cases
-    files["ppt/slides/slide14.xml"] = (x) => {
+    files[F(15)] = (x) => {
       const m = { 2: " + " + V + " use cases" };
       c.useCases.forEach((u, j) => { m[8 + 4 * j] = u.title; m[9 + 4 * j] = u.desc; });
       return patchText(x, m);
     };
+    // new front slides (what/why, two use cases): fill {tokens}
+    const tok = noteTokens(c, ctx);
+    files[F(2)] = (x) => fillNotes(x, tok);
+    files[F(5)] = (x) => fillNotes(x, tok);
     // slide23 discussion
-    files["ppt/slides/slide23.xml"] = (x) => patchText(x, { 2: V.toUpperCase() });
+    files[F(24)] = (x) => patchText(x, { 2: V.toUpperCase() });
     return files;
   }
 
@@ -498,7 +504,12 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
   // photos: optional array of 7 Uint8Array (jpeg) to replace the journey strip images.
   async function buildDeck(JSZip, template, content, ctx, photos) {
     const zip = await JSZip.loadAsync(template, { createFolders: false });
-    const files = build(content, ctx);
+    const prs = await zip.file("ppt/presentation.xml").async("string");
+    const rels = await zip.file("ppt/_rels/presentation.xml.rels").async("string");
+    const target = {};
+    (rels.match(/<Relationship [^>]*>/g) || []).forEach((r) => { const id = /Id="([^"]+)"/.exec(r), t = /Target="([^"]+)"/.exec(r); if (id && t) target[id[1]] = t[1]; });
+    const order = (prs.match(/<p:sldId [^>]*>/g) || []).map((e) => { const m = /r:id="([^"]+)"/.exec(e); const t = target[m[1]]; return "ppt/" + t.replace(/^\/?(ppt\/)?/, ""); });
+    const files = build(content, ctx, order);
     for (const path of Object.keys(files)) {
       const xml = await zip.file(path).async("string");
       zip.file(path, files[path](xml), { createFolders: false });
