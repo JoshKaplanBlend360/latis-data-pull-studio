@@ -407,6 +407,24 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
 
   function lc(v) { return String(v).toLowerCase(); }
 
+  // Speaker-note tokens: the template's notes slides carry the talk track with {TOKENS} filled per industry.
+  function noteTokens(c, ctx) {
+    const V = c.vertical, J = (ctx && ctx.journeys) || [];
+    const t = { V: V, v: lc(V), NJ: String(J.length || 8), FLAGSHIP: (J[0] && J[0].name) || "the flagship journey", CALLOUT: (c.featureStore && c.featureStore.callout) || "",
+      INTENT: (c.footprint && c.footprint.intentLabel) || "the in-market audience", WIN: (c.footprint && c.footprint.winLabel) || "the win-back and conquest audience" };
+    const m = /\(ex:\s*([^)]*)\)/.exec((c.journey && c.journey.title) || "");
+    t.ACTION = m ? m[1] : "the key action";
+    const cols = (c.journey && c.journey.cols) || [];
+    t.STORY = cols.map((k) => k.day + ": " + k.desc).join(". ") + ".";
+    cols.forEach((k, i) => { t["D" + (i + 1)] = k.desc; t["F" + (i + 1)] = k.feature; });
+    ((c.useCases) || []).forEach((u, i) => { t["UC" + (i + 1)] = u.title; });
+    ((c.third && c.third.cols) || []).forEach((k, i) => { t["TP" + (i + 1)] = k.name; });
+    return t;
+  }
+  function fillNotes(xml, tok) {
+    return xml.replace(/\{([A-Za-z0-9]+)\}/g, (m, k) => (k in tok ? esc(tok[k]) : m));
+  }
+
   function build(c, ctx) {
     const V = c.vertical;
     const files = {};
@@ -479,19 +497,26 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
   // JSZip: constructor; template: ArrayBuffer/Uint8Array; content: schema in README; ctx: {journeys:[...]}
   // photos: optional array of 7 Uint8Array (jpeg) to replace the journey strip images.
   async function buildDeck(JSZip, template, content, ctx, photos) {
-    const zip = await JSZip.loadAsync(template);
+    const zip = await JSZip.loadAsync(template, { createFolders: false });
     const files = build(content, ctx);
     for (const path of Object.keys(files)) {
       const xml = await zip.file(path).async("string");
-      zip.file(path, files[path](xml));
+      zip.file(path, files[path](xml), { createFolders: false });
+    }
+    const tok = noteTokens(content, ctx);
+    for (const path of Object.keys(zip.files)) {
+      if (/^ppt\/notesSlides\/notesSlide\d+\.xml$/.test(path)) {
+        const xml = await zip.file(path).async("string");
+        zip.file(path, fillNotes(xml, tok), { createFolders: false });
+      }
     }
     if (photos && photos.length) {
-      photos.forEach((p, i) => { if (p) zip.file("ppt/media/image" + (10 + i) + ".jpeg", p); });
+      photos.forEach((p, i) => { if (p) zip.file("ppt/media/image" + (10 + i) + ".jpeg", p, { createFolders: false }); });
     }
     return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
   }
 
-  const api = { buildDeck, patchText, build };
+  const api = { buildDeck, patchText, build, noteTokens, fillNotes };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LatisPatch = api;
 })(typeof window !== "undefined" ? window : globalThis);
 
