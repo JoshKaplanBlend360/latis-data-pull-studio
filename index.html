@@ -433,16 +433,16 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
     // slide1 cover
     files[F(1)] = (x) => patchText(x, { 1: V + " vertical" });
     // slide5 divider
-    files[F(8)] = (x) => patchText(x, { 1: "Latis + " + V });
+    files[F(7)] = (x) => patchText(x, { 1: "Latis + " + V });
     // slide8 journey
-    files[F(9)] = (x) => {
+    files[F(8)] = (x) => {
       const m = { 0: c.journey.title, 1: c.journey.curveLabel, 40: (t) => t.replace(/^\S+/, c.journey.daysText) };
       const D = [9, 13, 17, 21, 25, 29, 34];
       c.journey.cols.forEach((col, i) => { m[D[i]] = col.day; m[D[i] + 1] = col.desc; m[D[i] + 2] = col.feature; });
       return patchText(x, m);
     };
     // slide9 journey -> audiences
-    files[F(10)] = (x) => {
+    files[F(9)] = (x) => {
       const m = { 2: (t) => t.replace(/automotive/i, lc(V)) };
       const D = [3, 6, 9, 12, 15, 18, 21];
       c.map.days.forEach((d, i) => { m[D[i]] = c.journey.cols[i].day; m[D[i] + 1] = d; });
@@ -455,7 +455,7 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
       return patchText(x, m);
     };
     // slide10 third-party comparison
-    files[F(11)] = (x) => {
+    files[F(10)] = (x) => {
       const t = c.third, m = { 0: t.eyebrow, 1: t.title, 40: t.footnote };
       t.cols.forEach((col, i) => {
         m[4 + 2 * i] = col.name; m[5 + 2 * i] = col.sub;
@@ -464,12 +464,12 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
       return patchText(x, m);
     };
     // slide11 footprint
-    files[F(12)] = (x) => {
+    files[F(11)] = (x) => {
       const f = c.footprint;
       return patchText(x, { 1: V + "'s signal footprint on ", 7: f.intentLabel, 8: f.intentDesc, 10: f.winLabel, 11: f.winDesc });
     };
     // slide13 feature-store journeys
-    files[F(14)] = (x) => {
+    files[F(13)] = (x) => {
       const J = ctx.journeys.slice(0, 8), n = J.length;
       const m = {
         1: V + " journeys, pre-built on the Latis Feature Store",
@@ -486,17 +486,17 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
       return n < 8 ? removeCards(out, n) : out;
     };
     // slide14 use cases
-    files[F(15)] = (x) => {
+    files[F(14)] = (x) => {
       const m = { 2: " + " + V + " use cases" };
       c.useCases.forEach((u, j) => { m[8 + 4 * j] = u.title; m[9 + 4 * j] = u.desc; });
       return patchText(x, m);
     };
-    // new front slides (what/why, two use cases): fill {tokens}
+    // scale slide (what/why) and two-use-cases slide: fill {tokens}
     const tok = noteTokens(c, ctx);
     files[F(2)] = (x) => fillNotes(x, tok);
-    files[F(5)] = (x) => fillNotes(x, tok);
+    files[F(4)] = (x) => fillNotes(x, tok);
     // slide23 discussion
-    files[F(24)] = (x) => patchText(x, { 2: V.toUpperCase() });
+    files[F(23)] = (x) => patchText(x, { 2: V.toUpperCase() });
     return files;
   }
 
