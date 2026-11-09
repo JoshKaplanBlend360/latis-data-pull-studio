@@ -463,13 +463,8 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
       });
       return patchText(x, m);
     };
-    // slide11 footprint
-    files[F(11)] = (x) => {
-      const f = c.footprint;
-      return patchText(x, { 1: V + "'s signal footprint on ", 7: f.intentLabel, 8: f.intentDesc, 10: f.winLabel, 11: f.winDesc });
-    };
     // slide13 feature-store journeys
-    files[F(13)] = (x) => {
+    files[F(12)] = (x) => {
       const J = ctx.journeys.slice(0, 8), n = J.length;
       const m = {
         1: V + " journeys, pre-built on the Latis Feature Store",
@@ -486,7 +481,7 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
       return n < 8 ? removeCards(out, n) : out;
     };
     // slide14 use cases
-    files[F(14)] = (x) => {
+    files[F(13)] = (x) => {
       const m = { 2: " + " + V + " use cases" };
       c.useCases.forEach((u, j) => { m[8 + 4 * j] = u.title; m[9 + 4 * j] = u.desc; });
       return patchText(x, m);
@@ -496,7 +491,7 @@ window.LATIS_SIGNAL={"verts":["Automotive","Business & Industrial","Communicatio
     files[F(2)] = (x) => fillNotes(x, tok);
     files[F(4)] = (x) => fillNotes(x, tok);
     // slide23 discussion
-    files[F(26)] = (x) => patchText(x, { 2: V.toUpperCase() });
+    files[F(25)] = (x) => patchText(x, { 2: V.toUpperCase() });
     return files;
   }
 
