@@ -1087,16 +1087,31 @@ try{$('d_pkey').value=localStorage.getItem(PEX)||'';$('d_pprov').value=localStor
 $('d_pkey').addEventListener('change',()=>{try{localStorage.setItem(PEX,$('d_pkey').value.trim())}catch(_){}});
 $('d_pprov').addEventListener('change',()=>{try{localStorage.setItem(PPV,$('d_pprov').value)}catch(_){}});
 const QWORD={'QSR':'fast food restaurant','Food & Dining':'restaurant food','Retail & Shopping':'retail shopping','Travel & Transportation':'travel vacation','Financial Services':'banking personal finance','Consumer Electronics':'consumer electronics','Real Estate':'real estate home','Sports & Recreation':'sports recreation','Education':'college education'};
-function photoQueries(v,c){const w=QWORD[v]||v,q=(c.photoQueries||[]).filter(x=>typeof x==='string'&&x.trim());if(q.length>=7)return q.slice(0,7);
+const PHOTO_Q={'QSR':['family watching tv burgers on table','person browsing fast food menu phone','woman ordering food mobile app','couple choosing fast food online','customer at drive thru window','person picking up takeout order','friends eating burgers fries together'],
+'Consumer Electronics':['person watching new television at home','man comparing laptops online','woman holding smartphone new phone','couple setting up smart home speaker','customer choosing headphones electronics store','person unboxing new gadget','family playing video games console'],
+'Education':['student studying on laptop at home','college campus students walking','student reading university website laptop','parent and teenager college tour','student filling out application form','graduation ceremony graduates caps','student in classroom lecture'],
+'Financial Services':['couple reviewing finances at kitchen table','man comparing credit cards on laptop','woman using banking app smartphone','person calculating budget with calculator','customer meeting bank advisor','credit card contactless payment','family saving money piggy bank'],
+'Food & Dining':['friends dining at restaurant table','person browsing restaurant menu on phone','woman ordering food delivery app','couple choosing restaurant online','waiter serving dinner restaurant','food delivery courier doorstep','family enjoying meal together restaurant'],
+'Real Estate':['couple searching homes on laptop','person browsing real estate listings phone','couple touring open house','real estate agent showing house','couple signing mortgage documents','new homeowners holding keys','family moving into new home boxes'],
+'Retail & Shopping':['woman shopping online laptop home','person browsing clothes online phone','shopper comparing prices phone store','couple shopping in mall','customer at checkout store','delivery package at front door','happy shopper carrying shopping bags'],
+'Sports & Recreation':['family watching football game on tv','fan checking sports scores phone','man buying tickets online laptop','fans in stadium crowd','person buying running shoes sports store','friends playing soccer outdoors','woman exercising at home fitness'],
+'Travel & Transportation':['couple planning vacation on laptop','woman searching flights on smartphone','family looking at travel brochures','couple booking hotel online','traveler at airport with suitcase','family on beach vacation','couple sightseeing travel destination']};
+function photoQueries(v,c){if(PHOTO_Q[v])return PHOTO_Q[v];const w=QWORD[v]||v,q=(c.photoQueries||[]).filter(x=>typeof x==='string'&&x.trim());if(q.length>=7)return q.slice(0,7);
   const cols=c.journey.cols;return ['family watching tv living room',w+' research on laptop at home','woman using smartphone '+w,'couple at kitchen table with laptop '+w,w+' customer choosing options',w+' customer purchase checkout',w+' happy customers enjoying']}
+const STOP=new Set(['a','an','the','of','on','in','at','with','and','for','to','new','online','home']);
+function kw(q){return q.toLowerCase().split(/[^a-z]+/).filter(w=>w.length>2&&!STOP.has(w)).map(w=>w.replace(/(ing|ers|er|es|s)$/,''))}
+function score(text,q){const t=(text||'').toLowerCase();return kw(q).reduce((n,w)=>n+(t.indexOf(w)>=0?1:0),0)}
 async function stockUrls(q,key,prov){
-  if(prov==='unsplash'){const r=await fetch('https://api.unsplash.com/search/photos?per_page=12&orientation=portrait&query='+encodeURIComponent(q)+'&client_id='+encodeURIComponent(key));if(!r.ok)throw new Error('Unsplash '+r.status);const j=await r.json();return (j.results||[]).map(p=>p.urls.regular)}
-  const r=await fetch('https://pixabay.com/api/?image_type=photo&orientation=vertical&safesearch=true&per_page=15&q='+encodeURIComponent(q)+'&key='+encodeURIComponent(key));if(!r.ok)throw new Error('Pixabay '+r.status);const j=await r.json();return (j.hits||[]).map(h=>h.largeImageURL||h.webformatURL)}
+  if(prov==='unsplash'){const r=await fetch('https://api.unsplash.com/search/photos?per_page=30&query='+encodeURIComponent(q)+'&client_id='+encodeURIComponent(key));if(!r.ok)throw new Error('Unsplash '+r.status);const j=await r.json();return (j.results||[]).map(p=>({u:p.urls.regular,t:[p.alt_description,p.description].concat((p.tags||[]).map(x=>x.title)).join(' ')}))}
+  const r=await fetch('https://pixabay.com/api/?image_type=photo&safesearch=true&per_page=40&q='+encodeURIComponent(q)+'&key='+encodeURIComponent(key));if(!r.ok)throw new Error('Pixabay '+r.status);const j=await r.json();return (j.hits||[]).map(h=>({u:h.largeImageURL||h.webformatURL,t:h.tags||''}))}
 async function stockPhotos(qs,key,prov){
   const res=await Promise.allSettled(qs.map(q=>stockUrls(q,key,prov)));
-  const used=new Set(),urls=res.map(r=>{if(r.status!=='fulfilled')return null;const u=r.value.find(x=>x&&!used.has(x));if(u)used.add(u);return u||null});
+  const used=new Set(),urls=res.map((r,i)=>{if(r.status!=='fulfilled')return null;
+    const c=r.value.filter(x=>x&&x.u&&!used.has(x.u)).map(x=>({u:x.u,s:score(x.t,qs[i])})).sort((p,q2)=>q2.s-p.s);
+    const best=c[0];if(best&&best.s>0){used.add(best.u);return best.u}return null});
   const out=await Promise.allSettled(urls.map(async u=>u?coverJpeg(await (await fetch(u)).blob()):null));
-  return {got:out.map(o=>o.status==='fulfilled'?o.value:null),failed:res.filter(r=>r.status==='rejected')}}function msg(t,c){$('d_msg').className='msg '+(c||'');$('d_msg').textContent=t}
+  return {got:out.map(o=>o.status==='fulfilled'?o.value:null),failed:res.filter(r=>r.status==='rejected')}}
+function msg(t,c){$('d_msg').className='msg '+(c||'');$('d_msg').textContent=t}
 $('d_gen').onclick=async()=>{
   const v=vname();if(!v){msg('Enter an industry name.','err');return}
   $('d_gen').disabled=true;
@@ -1110,7 +1125,7 @@ $('d_gen').onclick=async()=>{
     if(v!=='Automotive'){
       const key=$('d_pkey').value.trim(),qs=photoQueries(v,c);let got=[null,null,null,null,null,null,null];
       if(key){msg('Picking '+v+' photos...');
-        const sp=await stockPhotos(qs,key,$('d_pprov').value);got=sp.got;const bad=sp.failed;if(bad.length===7)pexNote=' Photos could not be fetched ('+(bad[0].reason&&bad[0].reason.message||'error')+'); check the photo API key.';else if(got.some(x=>!x))pexNote=' Some photos were not found and use labeled tiles.'}
+        const sp=await stockPhotos(qs,key,$('d_pprov').value);got=sp.got;const bad=sp.failed;if(bad.length===7)pexNote=' Photos could not be fetched ('+(bad[0].reason&&bad[0].reason.message||'error')+'); check the photo API key.';else if(got.some(x=>!x))pexNote=' Some photos had no relevant match and use labeled tiles or the default photo.'}else pexNote=' No photo key set: add a Pixabay or Unsplash key to get industry-specific photos (otherwise generic lifestyle photos are used).'
       ph=[];for(let i=0;i<7;i++){const f=i>=4&&$('d_p'+(i+1)).files&&$('d_p'+(i+1)).files[0];
         if(f)ph.push(await coverJpeg(f));else if(got[i])ph.push(got[i]);else ph.push(i<4?null:await tile(i,c.journey.cols[i].day,v))}
     }
